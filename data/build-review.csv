@@ -1,0 +1,464 @@
+﻿google_id_row,google_title,google_author,goodbooks_id,goodbooks_title,goodbooks_author,matched_by
+9290,"The Lion, the Witch and the Wardrobe (adult)","C. S. Lewis",37,"The Lion, the Witch, and the Wardrobe (Chronicles of Narnia, #1)","C.S. Lewis",isbn
+401,"The Last Song","Nicholas Sparks",169,"The Last Song","Nicholas Sparks",isbn
+12156,"And Then There Were None","Agatha Christie",200,"And Then There Were None","Agatha Christie",isbn
+107,"The Magician's Nephew (adult)","C. S. Lewis",332,"The Magician's Nephew (Chronicles of Narnia, #6)","C.S. Lewis",isbn
+9625,"Plain Truth","Jodi Picoult",616,"Plain Truth","Jodi Picoult",isbn
+587,"Different Seasons","Stephen King",739,"Different Seasons","Stephen King",isbn
+103,"Crown of Midnight","Sarah J. Maas",752,"Crown of Midnight (Throne of Glass, #2)","Sarah J. Maas",isbn
+407,"The Glass Menagerie","Tennessee Williams",1186,"The Glass Menagerie","Tennessee Williams",isbn
+4068,"In the Heart of the Sea","Nathaniel Philbrick",1514,"In the Heart of the Sea: The Tragedy of the Whaleship Essex","Nathaniel Philbrick",isbn
+2540,"Dr. Faustus","Christopher Marlowe",2544,"Dr. Faustus","Christopher Marlowe",isbn
+403,"The Horse Whisperer","Nicholas Evans",2927,"The Horse Whisperer","Nicholas Evans",isbn
+106,"The Winter King","Bernard Cornwell",3941,"The Winter King (The Warlord Chronicles, #1)","Bernard Cornwell",isbn
+2138,"The China Study","T. Colin Campbell",5070,"The China Study: The Most Comprehensive Study of Nutrition Ever Conducted And the Startling Implications for Diet, Weight Loss, And Long-term Health","T. Colin Campbell",isbn
+496,"The Harbinger","Jonathan Cahn",5102,"The Harbinger: The Ancient Mystery that Holds the Secret of America's Future","Jonathan Cahn",isbn
+4991,"Vengeance in Death","J. D. Robb",5340,"Vengeance in Death (In Death, #6)","J.D. Robb",isbn
+1045,"The Dhammapada","",5637,"The Dhammapada","Anonymous",isbn
+549,"Roadwork","Stephen King",5763,"Roadwork","Richard Bachman",isbn
+1637,"Lust for Life","Irving Stone",6291,"Lust for Life","Irving Stone",isbn
+555,"Deeply Odd","Dean Ray Koontz",6507,"Deeply Odd (Odd Thomas, #6)","[Dean Koontz]",isbn
+495,"The Apostle","Brad Thor",7851,"The Apostle (Scot Harvath, #8)","[Brad Thor]",isbn
+1427,"On Food and Cooking","Harold McGee",8286,"On Food and Cooking: The Science and Lore of the Kitchen","[Harold McGee]",isbn
+618,"Stay Out of the Basement","R. L. Stine",8953,"Stay Out of the Basement  (Goosebumps, #2)","R.L. Stine",isbn
+2952,"Fantastic Beasts and where to Find Them","J. K. Rowling",9048,"Harry Potter Schoolbooks Box Set: Two Classic Books from the Library of Hogwarts School of Witchcraft and Wizardry","J.K. Rowling",isbn
+9307,"The Voyages of Doctor Dolittle","Hugh Lofting",9773,"The Voyages of Doctor Dolittle (Doctor Dolittle, #2)","Hugh Lofting",isbn
+1438,"Nourishing Traditions","Sally Fallon",9934,"Nourishing Traditions: The Cookbook That Challenges Politically Correct Nutrition and the Diet Dictocrats","Sally Fallon Morell",isbn
+1463,"The Great Gatsby","F. Scott Fitzgerald",5,"The Great Gatsby","F. Scott Fitzgerald",title+author
+2570,"Pride and Prejudice","Jane Austen",10,"Pride and Prejudice","Jane Austen",title+author
+2396,"Animal Farm","George Orwell",14,"Animal Farm","[George Orwell",title+author
+286,"The Girl with the Dragon Tattoo","Stieg Larsson",16,"The Girl with the Dragon Tattoo (Millennium, #1)","Stieg Larsson",title+author
+9326,"Harry Potter and the Order of the Phoenix","J.K. Rowling",21,"Harry Potter and the Order of the Phoenix (Harry Potter, #5)","J.K. Rowling",title+author
+329,"The Da Vinci Code","Dan Brown",26,"The Da Vinci Code (Robert Langdon, #2)","Dan Brown",title+author
+2527,"Romeo and Juliet","William Shakespeare",29,"Romeo and Juliet","William Shakespeare",title+author
+670,"Eat, Pray, Love","Elizabeth Gilbert",40,"Eat, Pray, Love","Elizabeth Gilbert",title+author
+11250,"Little Women","Louisa May Alcott",42,"Little Women (Little Women, #1)","Louisa May Alcott",title+author
+373,"Jane Eyre","Charlotte Brontë",43,"Jane Eyre","Charlotte Brontë",title+author
+4706,"Ozma Of Oz","L Frank Baum",7737,"Ozma of Oz (Oz, #3)","L. Frank Baum",title+author
+12318,"Bridget Jones's Diary","Helen Fielding",75,"Bridget Jones's Diary (Bridget Jones, #1)","Helen Fielding",title+author
+9233,"Sense and Sensibility","Jane Austen",76,"Sense and Sensibility","Jane Austen",title+author
+4425,"The Devil Wears Prada","Lauren Weisberger",78,"The Devil Wears Prada (The Devil Wears Prada, #1)","Lauren Weisberger",title+author
+456,"A Time to Kill","John GRISHAM",86,"A Time to Kill","John Grisham",title+author
+506,"The Princess Bride","William Goldman",89,"The Princess Bride ","William Goldman",title+author
+3582,"The Secret Garden","Frances Hodgson Burnett",93,"The Secret Garden","Frances Hodgson Burnett",title+author
+2434,"Dracula","Bram Stoker",97,"Dracula","Bram Stoker",title+author
+2772,"A Wrinkle in Time","Madeleine L'Engle",117,"A Wrinkle in Time (A Wrinkle in Time Quintet, #1)","[Madeleine L'Engle]",title+author
+12115,"The Grapes of Wrath","John Steinbeck",131,"The Grapes of Wrath","John Steinbeck",title+author
+9252,"Charlie and the Chocolate Factory","Roald Dahl",158,"Charlie and the Chocolate Factory (Charlie Bucket, #1)","Roald Dahl",title+author
+4679,"Great Expectations","Charles Dickens",160,"Great Expectations","Charles Dickens",title+author
+383,"Emma","Jane Austen",171,"Emma","Jane Austen",title+author
+4467,"The Bell Jar","Sylvia Plath",178,"The Bell Jar","Sylvia Plath",title+author
+41,"The Lord of the Rings","j.r.r. tolkien",189,"The Lord of the Rings (The Lord of the Rings, #1-3)","J.R.R. Tolkien",title+author
+12138,"A Christmas Carol","Charles Dickens",204,"A Christmas Carol","Charles Dickens",title+author
+2435,"The Metamorphosis","Franz Kafka",213,"The Metamorphosis","Franz Kafka",title+author
+344,"Persuasion","Jane Austen",230,"Persuasion","Jane Austen",title+author
+137,"The Gunslinger","Stephen King",232,"The Gunslinger (The Dark Tower, #1)","Stephen King",title+author
+719,"Running with Scissors","Augusten Burroughs",238,"Running with Scissors","Augusten Burroughs",title+author
+551,"Misery","Stephen King",243,"Misery","Stephen King",title+author
+9800,"Sharp Objects","Gillian Flynn",244,"Sharp Objects","Gillian Flynn",title+author
+1332,"How to Win Friends and Influence People","Dale Carnegie",260,"How to Win Friends and Influence People","Dale Carnegie",title+author
+16801,"Big Little Lies","Liane Moriarty",262,"Big Little Lies","[Liane Moriarty]",title+author
+625,"The Ocean at the End of the Lane","Neil Gaiman",277,"The Ocean at the End of the Lane","Neil Gaiman",title+author
+93,"Watership Down","Richard Adams",289,"Watership Down (Watership Down, #1)","Richard Adams",title+author
+2284,"Treasure Island","Robert Louis Stevenson",293,"Treasure Island","Robert Louis Stevenson",title+author
+12129,"The Time Machine","H.G. Wells",298,"The Time Machine","H.G. Wells",title+author
+3065,"Heart of Darkness","Joseph Conrad",301,"Heart of Darkness","Joseph Conrad",title+author
+9879,"Pet Sematary","Stephen King",305,"Pet Sematary","Stephen King",title+author
+72,"James and the Giant Peach","Roald Dahl",335,"James and the Giant Peach","Roald Dahl",title+author
+1944,"The Iliad","Homer",341,"The Iliad","Homer",title+author
+12253,"Othello","William Shakespeare",353,"Othello","William Shakespeare",title+author
+2556,"The Crucible","Arthur Miller",387,"The Crucible","Arthur Miller",title+author
+10295,"The Art of War","Sun Tzu",403,"The Art of War","Sun Tzu",title+author
+9160,"The Three Musketeers","Alexandre Dumas",413,"The Three Musketeers","Alexandre Dumas",title+author
+399,"Spirit Bound","Richelle Mead",418,"Spirit Bound (Vampire Academy, #5)","Richelle Mead",title+author
+9234,"The God of Small Things","Arundhati Roy",436,"The God of Small Things","Arundhati Roy",title+author
+378,"Northanger Abbey","Jane Austen",451,"Northanger Abbey","Jane Austen",title+author
+832,"Man's Search for Meaning","Viktor E. Frankl",472,"Man's Search for Meaning","Viktor E. Frankl",title+author
+340,"Killing Floor","Lee Child",477,"Killing Floor (Jack Reacher, #1)","Lee Child",title+author
+2392,"Robinson Crusoe","Daniel Defoe",478,"Robinson Crusoe","Daniel Defoe",title+author
+1056,"The Prince","Niccolò Machiavelli",479,"The Prince","Niccolò Machiavelli",title+author
+12060,"The Amber Spyglass","Philip Pullman",480,"The Amber Spyglass (His Dark Materials, #3)","Philip Pullman",title+author
+543,"The Green Mile","Stephen King",488,"The Green Mile","Stephen King",title+author
+12170,"Black Beauty","Anna Sewell",497,"Black Beauty","Anna Sewell",title+author
+4703,"War and Peace","Leo Tolstoy",498,"War and Peace","Leo Tolstoy",title+author
+2256,"Cloud Atlas","David Mitchell",522,"Cloud Atlas","David Mitchell",title+author
+16382,"Gulliver's Travels","Jonathan Swift",529,"Gulliver's Travels","Jonathan Swift",title+author
+593,"Last Sacrifice","Richelle Mead",543,"Last Sacrifice (Vampire Academy, #6)","Richelle Mead",title+author
+17621,"The Way of Kings","Brandon Sanderson",562,"The Way of Kings (The Stormlight Archive, #1)","Brandon Sanderson",title+author
+2763,"The Bourne Supremacy","Robert Ludlum",588,"The Bourne Supremacy (Jason Bourne, #2)","Robert Ludlum",title+author
+2386,"David Copperfield","Charles Dickens",590,"David Copperfield","Charles Dickens",title+author
+2459,"Don Quixote","Miguel de Cervantes Saavedra",597,"Don Quixote","Miguel de Cervantes Saavedra",title+author
+9238,"The Forgotten Garden","Kate Morton",613,"The Forgotten Garden","Kate Morton",title+author
+4672,"The Trial","Franz Kafka",614,"The Trial","Franz Kafka",title+author
+1868,"Heidi","Johanna Spyri",639,"Heidi","Johanna Spyri",title+author
+603,"Firestarter","Stephen King",675,"Firestarter","Stephen King",title+author
+9472,"Twenty Thousand Leagues Under the Sea","Jules VERNE",699,"Twenty Thousand Leagues Under the Sea","Jules Verne",title+author
+2484,"King Lear","William Shakespeare",714,"King Lear","William Shakespeare",title+author
+574,"The Waste Lands","Stephen King",725,"The Waste Lands (The Dark Tower, #3)","Stephen King",title+author
+609,"The Exorcist","William Peter Blatty",731,"The Exorcist","William Peter Blatty",title+author
+248,"The Complete Sherlock Holmes","Arthur Conan Doyle",769,"The Complete Sherlock Holmes","Arthur Conan Doyle",title+author
+1986,"The Taming of the Shrew","William Shakespeare",773,"The Taming of the Shrew","William Shakespeare",title+author
+2579,"A Fine Balance","Rohinton Mistry",779,"A Fine Balance","Rohinton Mistry",title+author
+112,"Howl's Moving Castle","Diana Wynne Jones",817,"Howl's Moving Castle (Howl's Moving Castle, #1)","Diana Wynne Jones",title+author
+1334,"Walden","Henry David Thoreau",819,"Walden","Henry David Thoreau",title+author
+9726,"A Court of Thorns and Roses","Sarah J. Maas",842,"A Court of Thorns and Roses (A Court of Thorns and Roses, #1)","Sarah J. Maas",title+author
+611,"Night Shift","Stephen King",865,"Night Shift","Stephen King",title+author
+12259,"THE PLAGUE","Albert Camus",872,"The Plague","Albert Camus",title+author
+2290,"White Fang","Jack London",935,"White Fang","Jack London",title+author
+520,"The Partner","John Grisham",963,"The Partner","John Grisham",title+author
+9759,"The Dark Half","Stephen King",967,"The Dark Half","Stephen King",title+author
+1226,"Paradise Lost","John Milton",984,"Paradise Lost","John Milton",title+author
+4711,"So Long, and Thanks for All the Fish","Douglas Adams",1014,"So Long, and Thanks for All the Fish (Hitchhiker's Guide to the Galaxy, #4)","Douglas Adams",title+author
+693,"A Moveable Feast","Ernest Hemingway",1031,"A Moveable Feast","Ernest Hemingway",title+author
+2584,"The Idiot","Fyodor Dostoyevsky",1041,"The Idiot","Fyodor Dostoyevsky",title+author
+12433,"Career of Evil","Robert Galbraith",1065,"Career of Evil (Cormoran Strike, #3)","[Robert Galbraith]",title+author
+1085,"Thus Spoke Zarathustra","Friedrich Nietzsche",1113,"Thus Spoke Zarathustra","Friedrich Nietzsche",title+author
+564,"The Tommyknockers","Stephen King",1139,"The Tommyknockers","Stephen King",title+author
+458,"The Big Sleep","Raymond Chandler",1160,"The Big Sleep (Philip Marlowe, #1)","Raymond Chandler",title+author
+1156,"The Divine Comedy","Dante Alighieri",1167,"The Divine Comedy","Dante Alighieri",title+author
+1916,"The Swiss Family Robinson","Johann David Wyss",1207,"The Swiss Family Robinson  ","Johann David Wyss",title+author
+9896,"Rosemary's Baby","Ira Levin",1247,"Rosemary's Baby","Ira Levin",title+author
+9292,"The Talisman","Stephen King",1248,"The Talisman (The Talisman, #1)","Stephen King",title+author
+1061,"The Origin of Species","Charles Darwin",1314,"The Origin of Species","Charles Darwin",title+author
+9305,"Horton Hears a Who!","Dr. Seuss",1348,"Horton Hears a Who!","Dr. Seuss",title+author
+9152,"THE Murder Of Roger Ackroyd","AGATHA CHRISTIE",1410,"The Murder of Roger Ackroyd (Hercule Poirot, #4)","Agatha Christie",title+author
+2352,"Redwall","Brian Jacques",1431,"Redwall (Redwall, #1)","Brian Jacques",title+author
+1069,"The Communist Manifesto","Karl Marx",1432,"The Communist Manifesto","Karl Marx",title+author
+1431,"My Life in France","Julia Child",1441,"My Life in France","Julia Child",title+author
+2670,"Bridget Jones: The Edge of Reason","Helen Fielding",1457,"Bridget Jones: The Edge of Reason (Bridget Jones, #2)","Helen Fielding",title+author
+4699,"Bleak House","Charles Dickens",1477,"Bleak House","Charles Dickens",title+author
+3952,"The Battle for Skandia","John Flanagan",1504,"The Battle for Skandia (Ranger's Apprentice, #4)","John Flanagan",title+author
+288,"Gardens of the Moon","Steven Erikson",1528,"Gardens of the Moon (The Malazan Book of the Fallen, #1)","Steven Erikson",title+author
+132,"A Swiftly Tilting Planet","Madeleine L'Engle",1530,"A Swiftly Tilting Planet (A Wrinkle in Time Quintet, #3)","Madeleine L'Engle",title+author
+4712,"The Boleyn Inheritance","Philippa Gregory",1537,"The Boleyn Inheritance (The Plantagenet and Tudor Novels, #10)","Philippa Gregory",title+author
+9291,"The Left Hand of Darkness","Ursula K. Le Guin",1574,"The Left Hand of Darkness","Ursula K. Le Guin",title+author
+12255,"A Doll's House","Henrik Ibsen",1580,"A Doll's House","Henrik Ibsen",title+author
+94,"The Farthest Shore","Ursula K. Le Guin",1591,"The Farthest Shore (Earthsea Cycle, #3)","Ursula K. Le Guin",title+author
+76,"The Tombs of Atuan","Ursula K. Le Guin",1629,"The Tombs of Atuan (Earthsea Cycle, #2)","Ursula K. Le Guin",title+author
+9312,"Something Wicked this Way Comes","Ray Bradbury",1641,"Something Wicked This Way Comes (Green Town, #2)","Ray Bradbury",title+author
+346,"Ignite Me","Tahereh Mafi",1651,"Ignite Me (Shatter Me, #3)","Tahereh Mafi",title+author
+2286,"Fantastic Mr. Fox","Roald Dahl",1662,"Fantastic Mr. Fox","Roald Dahl",title+author
+576,"Bitten","Kelley Armstrong",1779,"Bitten (Women of the Otherworld, #1)","Kelley Armstrong",title+author
+1165,"The Raven","Edgar Allan Poe",1784,"The Raven","Edgar Allan Poe",title+author
+9757,"Hannibal","Thomas Harris",1802,"Hannibal (Hannibal Lecter, #3)","Thomas Harris",title+author
+2426,"As You Like it","William Shakespeare",1885,"As You Like It","William Shakespeare",title+author
+2505,"Cyrano De Bergerac","Edmond Rostand",1887,"Cyrano de Bergerac","Edmond Rostand",title+author
+2753,"The Luminaries","Eleanor Catton",1920,"The Luminaries","Eleanor Catton",title+author
+10421,"Meditations","Marcus Aurelius",1967,"Meditations","Marcus Aurelius",title+author
+1295,"The Interpretation Of Dreams","Sigmund Freud",1973,"The Interpretation of Dreams","Sigmund Freud",title+author
+59,"Pinocchio","Carlo Collodi",1996,"Pinocchio","Carlo Collodi",title+author
+62,"New Spring","Robert Jordan",2056,"New Spring (Wheel of Time, #0)","Robert Jordan",title+author
+1919,"George's Marvellous Medicine","Roald Dahl",2123,"George's Marvellous Medicine","Roald Dahl",title+author
+326,"Unnatural Exposure","Patricia Cornwell",2296,"Unnatural Exposure (Kay Scarpetta, #8)","Patricia Cornwell",title+author
+2349,"Scorpia","Anthony Horowitz",2389,"Scorpia (Alex Rider, #5)","Anthony Horowitz",title+author
+2362,"One False Note","Gordon Korman",2391,"One False Note (The 39 Clues, #2)","Gordon Korman",title+author
+376,"Home Front","Kristin Hannah",2575,"Home Front","Kristin Hannah",title+author
+47,"A Hat Full of Sky","Terry Pratchett",2611,"A Hat Full of Sky (Discworld, #32; Tiffany Aching, #2)","Terry Pratchett",title+author
+69,"The Assassin's Blade","Sarah J. Maas",2629,"The Assassin's Blade (Throne of Glass, #0.1-0.5)","Sarah J. Maas",title+author
+498,"Psycho","Robert Bloch",2668,"Psycho","Robert Bloch",title+author
+3954,"A God in Ruins","Kate Atkinson",2848,"A God in Ruins","Kate Atkinson",title+author
+12195,"The Mill on the Floss","George Eliot",2952,"The Mill on the Floss","George Eliot",title+author
+82,"The Story of Doctor Dolittle","Hugh Lofting",2990,"The Story of Doctor Dolittle (Doctor Dolittle, #1)","Hugh Lofting",title+author
+368,"The Japanese Lover","Isabel Allende",2999,"The Japanese Lover","Isabel Allende",title+author
+339,"Where are the Children?","Mary Higgins Clark",3018,"Where Are the Children?","[Mary Higgins Clark]",title+author
+2645,"Three Men in a Boat","Jerome K. Jerome",3023,"Three Men in a Boat (Three Men, #1)","Jerome K. Jerome",title+author
+126,"Fox in Socks","Dr. Seuss",3047,"Fox in Socks","Dr. Seuss",title+author
+2302,"The Dark is Rising","Susan Cooper",3063,"The Dark Is Rising (The Dark is Rising, #2)","Susan Cooper",title+author
+523,"Missing You","Harlan Coben",3155,"Missing You","Harlan Coben",title+author
+479,"The Quickie","James Patterson",3162,"The Quickie","James Patterson",title+author
+372,"A Beautiful Wedding","Jamie McGuire",3192,"A Beautiful Wedding (Beautiful, #2.5)","Jamie McGuire",title+author
+9340,"Crooked Kingdom","Leigh Bardugo",3241,"Crooked Kingdom (Six of Crows, #2)","Leigh Bardugo",title+author
+2347,"Skeleton Key","Anthony Horowitz",3276,"Skeleton Key (Alex Rider, #3)","Anthony Horowitz",title+author
+457,"Gone for Good","Harlan Coben",3277,"Gone for Good","Harlan Coben",title+author
+2595,"The Gambler","Fyodor Dostoyevsky",3377,"The Gambler","Fyodor Dostoyevsky",title+author
+9814,"Hold Tight","Harlan Coben",3394,"Hold Tight","Harlan Coben",title+author
+2420,"The Castle","Franz Kafka",3482,"The Castle","Franz Kafka",title+author
+459,"The gods of guilt","Michael Connelly",3507,"The Gods of Guilt (Mickey Haller, #6; Harry Bosch Universe, #23)","[Michael Connelly]",title+author
+3341,"The Social Contract","Jean-Jacques Rousseau",3717,"The Social Contract","Jean-Jacques Rousseau",title+author
+3173,"The Federalist Papers","Alexander Hamilton",3720,"The Federalist Papers","Alexander Hamilton",title+author
+737,"King Leopold's Ghost","Adam Hochschild",3844,"King Leopold's Ghost","[Adam Hochschild]",title+author
+4683,"Homage to Catalonia","George Orwell",4004,"Homage to Catalonia","George Orwell",title+author
+395,"The Mistake","Elle Kennedy",4082,"The Mistake (Off-Campus, #2)","Elle Kennedy",title+author
+639,"Life Expectancy","Dean Koontz",4124,"Life Expectancy","Dean Koontz",title+author
+2320,"Mister Monday","Garth Nix",4167,"Mister Monday (The Keys to the Kingdom, #1)","Garth Nix",title+author
+4680,"The Canterville Ghost","Oscar Wilde",4183,"The Canterville Ghost","Oscar Wilde",title+author
+280,"Evil Under the Sun","Agatha Christie",4240,"Evil Under the Sun (Hercule Poirot, #23)","Agatha Christie",title+author
+448,"Hour Game","David Baldacci",4294,"Hour Game (Sean King & Michelle Maxwell, #2)","David Baldacci",title+author
+254,"Fractured","Karin Slaughter",4380,"Fractured (Will Trent, #2)","Karin Slaughter",title+author
+3310,"The Wealth of Nations","Adam Smith",4684,"The Wealth of Nations","Adam Smith",title+author
+9836,"Night Fall","Nelson DeMille",4915,"Night Fall (John Corey, #3)","Nelson DeMille",title+author
+330,"Hide","Lisa Gardner",5129,"Hide (Detective D.D. Warren, #2)","Lisa Gardner",title+author
+311,"The Full Cupboard of Life","Alexander McCall Smith",5263,"The Full Cupboard of Life (No. 1 Ladies' Detective Agency, #5)","Alexander McCall Smith",title+author
+9643,"Esio Trot","Roald Dahl",5311,"Esio Trot","Roald Dahl",title+author
+115,"Castle in the Air","Diana Wynne Jones",5632,"Castle in the Air (Howl's Moving Castle, #2)","Diana Wynne Jones",title+author
+455,"King and Maxwell","David Baldacci",5669,"King and Maxwell (Sean King & Michelle Maxwell, #6)","[David Baldacci]",title+author
+135,"The Power that Preserves","Stephen R. Donaldson",5695,"The Power That Preserves (The Chronicles of Thomas Covenant the Unbeliever, #3)","Stephen R. Donaldson",title+author
+17711,"Never Cry Wolf","Farley Mowat",5833,"Never Cry Wolf","Farley Mowat",title+author
+1185,"Faust","Johann Wolfgang von Goethe",5853,"Faust","Johann Wolfgang von Goethe",title+author
+2450,"Cards on the Table","Agatha Christie",5858,"Cards on the Table (Hercule Poirot, #15)","Agatha Christie",title+author
+10532,"A Child's Garden of Verses","Robert Louis Stevenson",5972,"A Child's Garden of Verses","Robert Louis Stevenson",title+author
+9856,"Raven's Gate","Anthony Horowitz",6053,"Raven's Gate (The Gatekeepers, #1)","Anthony Horowitz",title+author
+9283,"The Magic Finger","Roald Dahl",6097,"The Magic Finger (Young Puffin Developing Reader)","Roald Dahl",title+author
+10380,"Utilitarianism","John Stuart Mill",6225,"Utilitarianism","John Stuart Mill",title+author
+477,"The Confessor","Daniel Silva",6377,"The Confessor (Gabriel Allon, #3)","Daniel Silva",title+author
+302,"Crooked House","Agatha Christie",6501,"Crooked House","Agatha Christie",title+author
+268,"The Dogs of Riga","Henning Mankell",6516,"The Dogs of Riga (Kurt Wallander, #2)","Henning Mankell",title+author
+2521,"Titus Andronicus","William Shakespeare",6530,"Titus Andronicus","William Shakespeare",title+author
+2417,"Herzog","Saul Bellow",6615,"Herzog","Saul Bellow",title+author
+2539,"The Comedy of Errors","William Shakespeare",6692,"The Comedy of Errors","William Shakespeare",title+author
+441,"The Jester","James Patterson",6728,"The Jester","James Patterson",title+author
+9679,"The Wedding","Julie Garwood",6766,"The Wedding (Lairds' Fiancées, #2)","Julie Garwood",title+author
+11288,"Fairest","Chanda Hahn",6771,"Fairest (An Unfortunate Fairy Tale, #2)","Chanda Hahn",title+author
+9678,"Sometimes It Lasts","Abbi Glines",6803,"Sometimes It Lasts (Sea Breeze, #5)","Abbi Glines",title+author
+83,"The Fourth Bear","Jasper Fforde",6816,"The Fourth Bear (Nursery Crime, #2)","Jasper Fforde",title+author
+2343,"Brilliance of the Moon","Lian Hearn",6838,"Brilliance of the Moon (Tales of the Otori, #3)","Lian Hearn",title+author
+12019,"The Aquitaine Progression","Robert Ludlum",6908,"The Aquitaine Progression","[Robert Ludlum]",title+author
+604,"The Damnation Game","Clive Barker",7021,"The Damnation Game","Clive Barker",title+author
+71,"The Brothers Lionheart","Astrid Lindgren",7039,"The Brothers Lionheart","Astrid Lindgren",title+author
+3103,"Martin Eden","Jack London",7068,"Martin Eden","Jack London",title+author
+423,"To Sir Phillip, with Love","Julia Quinn",7301,"To Sir Phillip, With Love (Bridgertons, #5)","Julia Quinn",title+author
+128,"House of Many Ways","Diana Wynne Jones",7423,"House of Many Ways (Howl's Moving Castle, #3)","Diana Wynne Jones",title+author
+1059,"Phenomenology of Spirit","Georg Wilhelm Friedrich Hegel",7444,"Phenomenology of Spirit","Georg Wilhelm Friedrich Hegel",title+author
+563,"The Haunted Mask","R.l. Stine",7465,"The Haunted Mask (Goosebumps, #11)","R.L. Stine",title+author
+9815,"Chill Factor","Sandra Brown",7492,"Chill Factor","Sandra Brown",title+author
+9718,"One More Chance","Abbi Glines",7510,"One More Chance (Rosemary Beach, #8; Chance, #2)","Abbi Glines",title+author
+513,"Daddy's Little Girl","Mary Higgins Clark",7570,"Daddy's Little Girl","[Mary Higgins Clark]",title+author
+4237,"Tractatus Logico-Philosophicus","Ludwig Wittgenstein",7606,"Tractatus Logico-Philosophicus","Ludwig Wittgenstein",title+author
+12127,"Lord Edgware Dies","Agatha Christie",7607,"Lord Edgware Dies (Hercule Poirot, #9)","Agatha Christie",title+author
+9547,"Sleeping Murder","Agatha Christie",7619,"Sleeping Murder (Miss Marple, #13)","Agatha Christie",title+author
+2752,"A Pocket Full of Rye","Agatha Christie",7635,"A Pocket Full of Rye (Miss Marple, #7)","Agatha Christie",title+author
+2665,"The Secret Agent","Joseph Conrad",7668,"The Secret Agent","Joseph Conrad",title+author
+3947,"The Moon is Down","John Steinbeck",7826,"The Moon Is Down","John Steinbeck",title+author
+2646,"Lady Windermere's Fan","Oscar Wilde",7838,"Lady Windermere's Fan","Oscar Wilde",title+author
+317,"Hallowe'en Party","Agatha Christie",7991,"Hallowe'en Party (Hercule Poirot, #36)","Agatha Christie",title+author
+9535,"Way Station","Clifford D. Simak",8081,"Way Station","Clifford D. Simak",title+author
+15790,"After the Funeral","Agatha Christie",8156,"After the Funeral (Hercule Poirot, #29)","Agatha Christie",title+author
+2532,"The Little Mermaid","Hans Christian Andersen",8210,"The Little Mermaid","Hans Christian Andersen",title+author
+282,"The Moving Finger","Agatha Christie",8215,"The Moving Finger (Miss Marple, #4)","Agatha Christie",title+author
+1540,"Seven Years in Tibet","Heinrich Harrer",8524,"Seven Years in Tibet","Heinrich Harrer",title+author
+2742,"American Tabloid","James Ellroy",8529,"American Tabloid (Underworld USA, #1)","James Ellroy",title+author
+3517,"Thérèse Raquin","Émile Zola",8682,"Thérèse Raquin","Émile Zola",title+author
+4686,"The Black Arrow","Robert Louis Stevenson",8726,"The Black Arrow","Robert Louis Stevenson",title+author
+253,"Diamonds are Forever","Ian Fleming",8837,"Diamonds Are Forever (James Bond, #4)","Ian Fleming",title+author
+12272,"Mother Courage and Her Children","Bertolt Brecht",8908,"Mother Courage and Her Children","Bertolt Brecht",title+author
+521,"The Cold Moon","Jeffery Deaver",8972,"The Cold Moon (Lincoln Rhyme, #7)","Jeffery Deaver",title+author
+15792,"The Interpretation of Murder","Jed Rubenfeld",9237,"The Interpretation of Murder (Freud, #1)","Jed Rubenfeld",title+author
+422,"Lucky","Jackie Collins",9251,"Lucky (Lucky Santangelo, #2)","Jackie Collins",title+author
+12302,"Little Lord Fauntleroy","Frances Hodgson Burnett",9255,"Little Lord Fauntleroy","Frances Hodgson Burnett",title+author
+352,"The Promise","Danielle Steel",9405,"The Promise","Danielle Steel",title+author
+9660,"Fine things","Danielle Steel",9430,"Fine Things","[Danielle Steel]",title+author
+1094,"The Society of the Spectacle","Guy Debord",9563,"The Society of the Spectacle","Guy Debord",title+author
+2746,"The Secret of the Unicorn","Hergé",9664,"The Secret of the Unicorn (Tintin, #11)","Hergé",title+author
+9601,"The Wolves of Willoughby Chase","Joan Aiken",9849,"The Wolves of Willoughby Chase (The Wolves Chronicles, #1)","Joan Aiken",title+author
+1759,"Homo Faber","Max Frisch",9908,"Homo Faber","Max Frisch",title+author
+32,"Inherent Vice","Thomas Pynchon",4426,"Inherent Vice","Thomas Pynchon",title+author
+58,"Graceling","Kristin Cashore",355,"Graceling (Graceling Realm, #1)","Kristin Cashore",title+author
+2409,"The House of Mirth","Edith Wharton",1509,"The House of Mirth","Edith Wharton",title+author
+2773,"Don't Blink","James Patterson",9057,"Don't Blink","James Patterson",isbn
+264,"The Daughter of Time","Josephine Tey",7808,"The Daughter of Time (Inspector Alan Grant, #5)","Josephine Tey",title+author
+333,"Full Dark, No Stars","Stephen King",1576,"Full Dark, No Stars","Stephen King",title+author
+504,"The Dead Zone","Stephen King",670,"The Dead Zone","Stephen King",title+author
+2774,"Swindle","Gordon Korman",7188,"Swindle (Swindle, #1)","Gordon Korman",title+author
+511,"Scarecrow","Matthew Reilly",7724,"Scarecrow (Shane Schofield, #3)","Matthew Reilly",title+author
+321,"Fatal Voyage","Kathy Reichs",2970,"Fatal Voyage (Temperance Brennan, #4)","Kathy Reichs",title+author
+323,"Merry Christmas, Alex Cross","James Patterson",6486,"Merry Christmas, Alex Cross (Alex Cross, #19)","[James Patterson]",title+author
+9473,"Blindsight","Peter Watts",6169,"Blindsight (Firefall, #1)","Peter Watts",title+author
+1110,"Fear and Trembling","Soren Kierkegaard",7392,"Fear and Trembling","Søren Kierkegaard",isbn
+391,"The Little Paris Bookshop","Nina George",2663,"The Little Paris Bookshop","Nina George",title+author
+392,"Daughter of the Forest","Juliet Marillier",3302,"Daughter of the Forest  (Sevenwaters, #1)","Juliet Marillier",title+author
+442,"The Shadow of the Wind","Carlos Ruiz Zafón",258,"The Shadow of the Wind (The Cemetery of Forgotten Books,  #1)","Carlos Ruiz Zafón",title+author
+11267,"FIVE CHILDREN AND IT","E. NESBIT",8262,"Five Children and It (Five Children, #1)","E. Nesbit",title+author
+17321,"Songbook","Nick Hornby",9083,"Songbook","[Nick Hornby]",isbn
+12280,"Glengarry Glen Ross","David Mamet",8696,"Glengarry Glen Ross","David Mamet",title+author
+2319,"Ark Angel","Anthony Horowitz",3369,"Ark Angel (Alex Rider, #6)","Anthony Horowitz",title+author
+2339,"The Lost City of Faar","D. J. MacHale",4230,"The Lost City of Faar (Pendragon, #2)","D.J. MacHale",title+author
+2364,"The Will of the Empress","Tamora Pierce",8332,"The Will of the Empress (Circle Reforged, #1)","Tamora Pierce",title+author
+119,"The House at Pooh Corner","Alan Alexander Milne",1545,"The House at Pooh Corner (Winnie-the-Pooh, #2)","A.A. Milne",title+author
+17324,"The Natural Way to Draw","Kimon Nicolaïdes",3499,"The Natural Way to Draw","Kimon Nicolaides",isbn
+9579,"The Narrows","Michael Connelly",3705,"The Narrows (Harry Bosch, #10; Harry Bosch Universe, #12)","Michael Connelly",title+author
+17718,"All Things Wise and Wonderful","James Herriot",5658,"All Things Wise and Wonderful","James Herriot",title+author
+2653,"The Fall","Albert Camus",2024,"The Fall","Albert Camus",title+author
+9254,"Silver on the Tree","Susan Cooper",4534,"Silver on the Tree (The Dark is Rising, #5)","Susan Cooper",title+author
+328,"Plum Lovin'","Janet Evanovich",3025,"Plum Lovin' (Stephanie Plum, #12.5)","Janet Evanovich",title+author
+360,"Sons and Lovers","David Herbert Lawrence",3002,"Sons and Lovers","D.H. Lawrence",title+author
+12188,"The Five People You Meet in Heaven","Mitch Albom",132,"The Five People You Meet in Heaven","Mitch Albom",title+author
+101,"The Curse of Chalion","Lois McMaster Bujold",5429,"The Curse of Chalion (World of the Five Gods, #1)","Lois McMaster Bujold",title+author
+102,"The City of Ember","Jeanne DuPrau",486,"The City of Ember (Book of Ember, #1)","Jeanne DuPrau",title+author
+272,"Special Topics in Calamity Physics","Marisha Pessl",2914,"Special Topics in Calamity Physics","Marisha Pessl",title+author
+2354,"The Ironwood Tree","Tony DiTerlizzi",5151,"The Ironwood Tree (The Spiderwick Chronicles, #4)","Holly Black",isbn
+290,"Faithless","Karin Slaughter",5771,"Faithless (Grant County, #5)","Karin Slaughter",isbn
+293,"Cat Among the Pigeons","Agatha Christie",7208,"Cat Among the Pigeons (Hercule Poirot, #32)","Agatha Christie",title+author
+2413,"Washington Square","Henry James",7997,"Washington Square","Henry James",title+author
+2414,"Johnny Tremain","Esther Forbes",4196,"Johnny Tremain","Esther Forbes",title+author
+309,"Native Tongue","Carl Hiaasen",8474,"Native Tongue (Skink, #2)","Carl Hiaasen",title+author
+2451,"The Body in the Library","Agatha Christie",3229,"The Body in the Library (Miss Marple, #3)","Agatha Christie",title+author
+2467,"Tess of the D'Urbervilles","Thomas Hardy",559,"Tess of the D'Urbervilles","Thomas Hardy",title+author
+313,"The Mirror Crack'd from Side to Side","Agatha Christie",6512,"The Mirror Crack'd from Side to Side (Miss Marple, #9)","Agatha Christie",title+author
+314,"The Girl on the Train","Paula Hawkins",61,"The Girl on the Train","Paula Hawkins",title+author
+380,"Mansfield Park","Jane Austen",471,"Mansfield Park","Jane Austen",title+author
+362,"The Copper Beech","Maeve Binchy",6261,"The Copper Beech","Maeve Binchy",title+author
+472,"Brother Odd","Dean Koontz",2009,"Brother Odd (Odd Thomas, #3)","Dean Koontz",title+author
+1321,"The Art of Loving","Erich Fromm",2934,"The Art of Loving","Erich Fromm",title+author
+9618,"The Black Circle","Patrick Carman",2531,"The Black Circle (The 39 Clues, #5)","Patrick Carman",title+author
+9690,"Me Before You (Movie Tie-In)","Jojo Moyes",112,"Me Before You (Me Before You, #1)","[Jojo Moyes]",title+author
+9699,"The Deal","Elle Kennedy",2178,"The Deal (Off-Campus, #1)","Elle Kennedy",title+author
+11547,"Calvin And Hobbes","Bill Watterson",780,"Calvin and Hobbes","Bill Watterson",title+author
+1937,"Olivia","",2127,"Olivia","Ian Falconer",isbn
+9704,"Twisted Perfection","Abbi Glines",2665,"Twisted Perfection (Rosemary Beach, #5; Perfection, #1)","Abbi Glines",title+author
+11982,"Hope was Here","Joan Bauer",7943,"Hope Was Here","Joan Bauer",title+author
+2470,"The Godfather","Mario Puzo",274,"The Godfather","Mario Puzo",title+author
+4673,"The Sorrows of Young Werther","Johann Wolfgang von Goethe",2286,"The Sorrows of Young Werther","Johann Wolfgang von Goethe",title+author
+721,"I Know why the Caged Bird Sings","Maya Angelou",317,"I Know Why the Caged Bird Sings","Maya Angelou",isbn
+17519,"On Liberty","John Stuart Mill",4733,"On Liberty","John Stuart Mill",title+author
+61,"The Wind in the Willows","Kenneth Grahame",826,"The Wind in the Willows","Kenneth Grahame",title+author
+60,"Winnie-the-Pooh","Alan Alexander Milne",444,"Winnie-the-Pooh (Winnie-the-Pooh, #1)","A.A. Milne",title+author
+73,"Weaveworld","Clive Barker",5134,"Weaveworld","Clive Barker",title+author
+99,"Coraline","Neil Gaiman",282,"Coraline","Neil Gaiman",title+author
+98,"The Thief of Always","Clive Barker",4800,"The Thief of Always","Clive Barker",title+author
+108,"The Black Cauldron","Lloyd Alexander",2230,"The Black Cauldron (The Chronicles of Prydain #2)","Lloyd Alexander",title+author
+259,"All the Missing Girls","Megan Miranda",4176,"All the Missing Girls","[Megan Miranda]",title+author
+291,"Death on the Nile","Agatha Christie",1741,"Death on the Nile (Hercule Poirot, #17)","Agatha Christie",title+author
+338,"The Other Daughter","Lisa Gardner",9155,"The Other Daughter","[Lisa Gardner]",title+author
+341,"Wuthering Heights","Emily Bront?e",63,"Wuthering Heights","Emily Brontë",title+author
+486,"The Cobra Event","Richard Preston",9217,"The Cobra Event","Richard   Preston",title+author
+485,"The Phantom of the Opera","Gaston Leroux",651,"The Phantom of the Opera","Gaston Leroux",title+author
+545,"Seeds of Yesterday","Virginia C. Andrews",4052,"Seeds of Yesterday (Dollanganger, #4)","V.C. Andrews",title+author
+580,"Ghost Story","Peter Straub",1974,"Ghost Story","Peter Straub",isbn
+588,"Lord of the Shadows","Darren Shan",6652,"Lord of the Shadows (Cirque Du Freak, #11)","Darren Shan",title+author
+589,"The Faceless Ones","Derek Landy",7374,"The Faceless Ones (Skulduggery Pleasant, #3)","Derek Landy",title+author
+607,"The Stand","Stephen King",168,"The Stand","Stephen King",title+author
+2342,"King Solomon's Mines","Henry Rider Haggard",3080,"King Solomon's Mines (Allan Quatermain, #1)","H. Rider Haggard",title+author
+1143,"The Prophet","Kahlil Gibran",489,"The Prophet","Kahlil Gibran",title+author
+1161,"Inferno","Dante Alighieri",977,"Inferno (The Divine Comedy #1)","Dante Alighieri",title+author
+1274,"The Interpretation of Dreams (Hardcover Library Edition)","Sigmund Freud",1973,"The Interpretation of Dreams","Sigmund Freud",title+author
+1519,"Robinson Crusoe (Collins Classics)","Daniel Defoe",478,"Robinson Crusoe","Daniel Defoe",title+author
+2495,"Much Ado About Nothing","William Shakespeare",530,"Much Ado About Nothing","William Shakespeare",title+author
+1852,"An Old-fashioned Girl","Louisa May Alcott",8888,"An Old-Fashioned Girl","Louisa May Alcott",title+author
+1939,"A Map of the World","Jane Hamilton",1567,"A Map of the World","Jane Hamilton",title+author
+1952,"The Monster at the End of this Book","Jon Stone",998,"The Monster at the End of this Book","Jon Stone",title+author
+2189,"Middlemarch","George Eliot",961,"Middlemarch","George Eliot",title+author
+2380,"The Angel Experiment","James Patterson",569,"The Angel Experiment (Maximum Ride, #1)","James Patterson",title+author
+2404,"Moll Flanders","Daniel Defoe",3642,"Moll Flanders","Daniel Defoe",title+author
+2412,"The Return of the Native","Thomas Hardy",4582,"The Return of the Native  ","Thomas Hardy",title+author
+2416,"The Time Machine","Herbert George Wells",298,"The Time Machine","H.G. Wells",title+author
+2418,"Five Children and it","Edith Nesbit",8262,"Five Children and It (Five Children, #1)","E. Nesbit",title+author
+2424,"Ethan Frome","Edith Wharton",1566,"Ethan Frome","Edith Wharton",title+author
+2430,"The Fountainhead","Ayn Rand",287,"The Fountainhead","Ayn Rand",title+author
+2445,"Tuesdays with Morrie","Mitch Albom",114,"Tuesdays with Morrie","Mitch Albom",title+author
+2452,"Anne of Green Gables","Lucy Maud Montgomery",133,"Anne of Green Gables (Anne of Green Gables, #1)","L.M. Montgomery",title+author
+2457,"A Tale of Two Cities","Charles Dickens",83,"A Tale of Two Cities","Charles Dickens",title+author
+2460,"Anne of the Island","Lucy Maud Montgomery",1112,"Anne of the Island (Anne of Green Gables, #3)","L.M. Montgomery",title+author
+2471,"A Connecticut Yankee in King Arthur's Court","Mark Twain",1622,"A Connecticut Yankee in King Arthur's Court","Mark Twain",title+author
+2723,"The Broker","John Grisham",1301,"The Broker","John Grisham",title+author
+2727,"The Big Nowhere","James Ellroy",9452,"The Big Nowhere (L.A. Quartet, #2)","James Ellroy",title+author
+2756,"The Secret History","Donna Tartt",494,"The Secret History","Donna Tartt",title+author
+12284,"Twelfth Night","William Shakespeare",855,"Twelfth Night","William Shakespeare",title+author
+12369,"Dead Souls (Annotated with Biography)","Nikolai Gogol",2177,"Dead Souls","Nikolai Gogol",title+author
+9215,"The Mysterious Affair at Styles","Agatha Christie",671,"The Mysterious Affair at Styles (Hercule Poirot, #1)","Agatha Christie",title+author
+9269,"Peter Pan","James Matthew Barrie",518,"Peter Pan","J.M. Barrie",title+author
+9295,"Bridge to Terabithia","Katherine Paterson",245,"Bridge to Terabithia","[Katherine Paterson]",title+author
+9293,"The Neverending Story","Michael Ende",877,"The Neverending Story","Michael Ende",title+author
+9633,"The Mysterious Affair at Styles (100 Copy Collector's Edition)","Agatha Christie",671,"The Mysterious Affair at Styles (Hercule Poirot, #1)","Agatha Christie",title+author
+9859,"The Call of Cthulhu","H. P. Lovecraft",4826,"The Call of Cthulhu","H.P. Lovecraft",title+author
+17436,"Rainbow Valley","Lucy Maud Montgomery",5567,"Rainbow Valley (Anne of Green Gables, #7)","L.M. Montgomery",title+author
+9843,"Carmilla","Joseph Sheridan Le Fanu",5581,"Carmilla","J. Sheridan Le Fanu",title+author
+9857,"The Struggle","L. J. Smith",5322,"The Struggle (The Vampire Diaries, #2)","L.J. Smith",title+author
+9918,"The Keep","F. Paul Wilson",7143,"The Keep (Adversary Cycle, #1)","F. Paul Wilson",title+author
+10412,"Two Treatises of Government","John Locke",7428,"Two Treatises of Government","John Locke",title+author
+11283,"The Prince and the Pauper","Mark Twain",1178,"The Prince and the Pauper","Mark Twain",title+author
+12117,"Howards End","Edward Morgan Forster",1949,"Howards End","[E.M. Forster]",title+author
+12137,"For Whom the Bell Tolls","Ernest Hemingway",395,"For Whom the Bell Tolls","Ernest Hemingway",title+author
+12152,"The Waves","Virginia Woolf",6326,"The Waves","Virginia Woolf",title+author
+12161,"The Magic Faraway Tree","Enid Blyton",3836,"The Magic Faraway Tree (The Faraway Tree, #2)","Enid Blyton",title+author
+12171,"Right Ho, Jeeves (Warbler Classics Annotated Edition)","P. G. Wodehouse",5961,"Right Ho, Jeeves (Jeeves, #6)","[P.G. Wodehouse]",title+author
+12172,"Island","Aldous Huxley",5783,"Island","Aldous Huxley",title+author
+12218,"Twenty Thousand Leagues Under the Sea (World Classics, Unabridged)","Jules Verne",699,"Twenty Thousand Leagues Under the Sea","Jules Verne",title+author
+12244,"Fiddler on the Roof","Joseph Stein",7234,"Fiddler on the Roof","Joseph Stein",title+author
+12391,"All My Friends Are Dead","Avery Monsen",5520,"All My Friends Are Dead","Avery Monsen",title+author
+14,"Hunger","Knut Hamsun",3954,"Hunger","Knut Hamsun",title+author
+42,"The Horse and His Boy","Clive Staples Lewis",542,"The Horse and His Boy (Chronicles of Narnia, #5)","[C.S. Lewis]",title+author
+70,"Tehanu","Ursula K. Le Guin",5661,"Tehanu (Earthsea Cycle, #4)","Ursula K. Le Guin",title+author
+78,"Harry Potter and the Deathly Hallows","J. K. Rowling",25,"Harry Potter and the Deathly Hallows (Harry Potter, #7)","J.K. Rowling",title+author
+88,"The Eyes of the Dragon","Stephen King",1261,"The Eyes of the Dragon","Stephen King",title+author
+91,"The Lives of Christopher Chant","Diana Wynne Jones",7081,"The Lives of Christopher Chant (Chrestomanci, #2)","Diana Wynne Jones",title+author
+125,"Harry Potter and the Order of the Phoenix","J. K. Rowling",21,"Harry Potter and the Order of the Phoenix (Harry Potter, #5)","J.K. Rowling",title+author
+110,"Inkdeath","Cornelia Funke",2195,"Inkdeath (Inkworld, #3)","Cornelia Funke",title+author
+105,"The Grey King","Susan Cooper",4650,"The Grey King (The Dark Is Rising, #4)","Susan Cooper",title+author
+118,"Starship Troopers","Robert Anson Heinlein",633,"Starship Troopers","Robert A. Heinlein",title+author
+129,"Ozma of Oz","Lyman Frank Baum",7737,"Ozma of Oz (Oz, #3)","L. Frank Baum",title+author
+138,"The Kiss of Deception","Mary E. Pearson",2941,"The Kiss of Deception (The Remnant Chronicles, #1)","Mary E. Pearson",title+author
+140,"The Marvelous Land of Oz","Lyman Frank Baum",9532,"The Marvelous Land of Oz (Oz, #2)","L. Frank Baum",title+author
+285,"Hercule Poirot's Christmas","Agatha Christie",6087,"Hercule Poirot's Christmas (Hercule Poirot, #20)","Agatha Christie",title+author
+413,"Maid for Love","Marie Force",7488,"Maid for Love (Gansett Island Series, #1)","Marie Force",title+author
+491,"Path of the Assassin","Brad Thor",6672,"Path of the Assassin (Scot Harvath, #2)","[Brad Thor]",title+author
+277,"My Name is Red","Orhan Pamuk",3048,"My Name is Red","Orhan Pamuk",title+author
+307,"7th Heaven","James Patterson",2773,"7th Heaven (Women's Murder Club, #7)","James Patterson",title+author
+303,"A Caribbean Mystery","Agatha Christie",9116,"A Caribbean Mystery (Miss Marple, #10)","Agatha Christie",title+author
+494,"Flowers in the Attic","V. C. Andrews",851,"Flowers in the Attic (Dollanganger, #1)","V.C. Andrews",title+author
+405,"The Princess Diaries","Meg Cabot",500,"The Princess Diaries (The Princess Diaries, #1)","Meg Cabot",title+author
+406,"Rising Tides","Nora Roberts",5522,"Rising Tides (Chesapeake Bay Saga, #2)","Nora Roberts",title+author
+425,"The Darkest Lie","Gena Showalter",5248,"The Darkest Lie (Lords of the Underworld #6)","Gena Showalter",title+author
+525,"I, Alex Cross","James Patterson",3829,"I, Alex Cross (Alex Cross, #16)","James Patterson",title+author
+612,"Welcome to Dead House","R. L. Stine",5733,"Welcome to Dead House (Goosebumps, #1)","R.L. Stine",isbn
+599,"Four Past Midnight","Stephen King",1208,"Four Past Midnight ","Stephen King",title+author
+630,"We Need to Talk About Kevin","Lionel Shriver",896,"We Need to Talk About Kevin","Lionel Shriver",title+author
+1139,"Mein Kampf","Adolf Hitler",4399,"Mein Kampf","Adolf Hitler",title+author
+2598,"Candide","Voltaire",576,"Candide","Voltaire",title+author
+1879,"The Chronicles of Narnia","C. S. Lewis",219,"The Chronicles of Narnia (Chronicles of Narnia, #1-7)","C.S. Lewis",title+author
+1920,"Mrs. Piggle-Wiggle's Magic","Betty MacDonald",8856,"Mrs. Piggle-Wiggle's Magic (Mrs. Piggle Wiggle, #2)","[Betty MacDonald",title+author
+2288,"Life of Pi","Yann Martel",45,"Life of Pi","Yann Martel",title+author
+2314,"Harry Potter and the Chamber of Secrets","J. K. Rowling",23,"Harry Potter and the Chamber of Secrets (Harry Potter, #2)","J.K. Rowling",title+author
+2331,"The Bourne Identity","Robert Ludlum",222,"The Bourne Identity (Jason Bourne, #1)","Robert Ludlum",title+author
+2348,"Snakehead","Anthony Horowitz",3664,"Snakehead (Alex Rider, #7)","Anthony Horowitz",title+author
+2368,"Stuart Little","Elwyn Brooks White",1222,"Stuart Little","E.B. White",title+author
+2407,"Ivanhoe","Walter Scott",1605,"Ivanhoe","Walter Scott",title+author
+2379,"Beyond the Grave","Jude Watson",3060,"Beyond the Grave (The 39 Clues #4)","Jude Watson",title+author
+2419,"The Hound of the Baskervilles","Arthur Conan Doyle",618,"The Hound of the Baskervilles","Arthur Conan Doyle",title+author
+2433,"The Mystery of the Blue Train","Agatha Christie",7006,"The Mystery of the Blue Train (Hercule Poirot, #6)","Agatha Christie",title+author
+2454,"The Beautiful and Damned","Francis Scott Fitzgerald",3255,"The Beautiful and Damned","F. Scott Fitzgerald",title+author
+2497,"Thérèse Raquin","Emile Zola",8682,"Thérèse Raquin","Émile Zola",title+author
+2534,"Medea","Euripides",2763,"Medea","Euripides",title+author
+2673,"Last Chance to See","Douglas Adams",7187,"Last Chance to See","Douglas Adams",title+author
+2759,"Cover Her Face","P. D. James",4586,"Cover Her Face (Adam Dalgliesh #1)","P.D. James",title+author
+3168,"The Federalist Papers","A. Hamilton",3720,"The Federalist Papers","Alexander Hamilton",title+author
+3390,"How to Talk So Kids Will Listen & Listen So Kids Will Talk","Adele Faber",7233,"How to Talk So Kids Will Listen & Listen So Kids Will Talk","Adele Faber",title+author
+3987,"The War of the Worlds","H G Wells",547,"The War of the Worlds","H.G. Wells",title+author
+3890,"Hedda Gabler","Henrik Ibsen",4244,"Hedda Gabler","Henrik Ibsen",title+author
+3927,"Fall of Giants","Ken Follett",440,"Fall of Giants (The Century Trilogy, #1)","Ken Follett",title+author
+4503,"While My Pretty One Sleeps","Mary Higgins Clark",5801,"While My Pretty One Sleeps","Mary Higgins Clark",title+author
+4677,"The Jungle Book","Rudyard Kipling",1327,"The Jungle Book","Rudyard Kipling",title+author
+7115,"To the Lighthouse","Virginia Woolf",1084,"To the Lighthouse","Virginia Woolf",title+author
+4705,"Manuscript Found in Accra","Paulo Coelho",5132,"Manuscript Found in Accra","Paulo Coelho",title+author
+38,"That Hideous Strength","Clive Staples Lewis",5229,"That Hideous Strength (Space Trilogy, #3)","C.S. Lewis",title+author
+4671,"Wuthering Heights","Emily Brontë",63,"Wuthering Heights","Emily Brontë",title+author
+9219,"Train to Pakistan","Khushwant Singh",6030,"Train to Pakistan","Khushwant Singh",title+author
+9260,"The Hobbit","John Ronald Reuel Tolkien",7,"The Hobbit","J.R.R. Tolkien",title+author
+9262,"Red Queen","Victoria Aveyard",536,"Red Queen (Red Queen, #1)","Victoria Aveyard",title+author
+9274,"Rendezvous with Rama","Arthur Charles Clarke",897,"Rendezvous with Rama (Rama, #1)","Arthur C. Clarke",title+author
+9289,"The Eye of the World","Robert Jordan",330,"The Eye of the World (Wheel of Time, #1)","Robert Jordan",title+author
+9304,"Throne of Glass","Sarah J. Maas",393,"Throne of Glass (Throne of Glass, #1)","Sarah J. Maas",title+author
+9600,"A Dangerous Fortune","Ken Follett",4682,"A Dangerous Fortune","Ken Follett",title+author
+10017,"The Wright Brothers","David McCullough",2788,"The Wright Brothers","David McCullough",isbn
+10077,"Two Treatises of Government( Illustrated Edition)","John Locke",7428,"Two Treatises of Government","John Locke",title+author
+10131,"Around the World in Eighty Days","Jules Verne",706,"Around the World in Eighty Days","Jules Verne",title+author
+11262,"Rose in Bloom","Louisa May Alcott",7430,"Rose in Bloom (Eight Cousins, #2)","Louisa May Alcott",title+author
+11381,"A Thousand Boy Kisses","Tillie Cole",9913,"A Thousand Boy Kisses","Tillie Cole",title+author
+12077,"The Magician's Nephew","Clive Staples Lewis",332,"The Magician's Nephew (Chronicles of Narnia, #6)","C.S. Lewis",title+author
+12151,"Brighton Rock","Graham Greene",6999,"Brighton Rock","Graham Greene",title+author
+12174,"The Lord of the Rings","John Ronald Reuel Tolkien",189,"The Lord of the Rings (The Lord of the Rings, #1-3)","J.R.R. Tolkien",title+author
+12245,"The Winter's Tale","William Shakespeare",6417,"The Winter's Tale","William Shakespeare",title+author
+12250,"Othello (Classic Reprint)","William Shakespeare",353,"Othello","William Shakespeare",title+author
+12315,"Old Possum's Book of Practical Cats","Thomas Stearns Eliot",7106,"Old Possum's Book of Practical Cats","T.S. Eliot",title+author
+2301,"The Railway Children","Edith Nesbit",3460,"The Railway Children","E. Nesbit",title+author
+2356,"The Adventures of Tom Sawyer","Mark Twain",116,"The Adventures of Tom Sawyer","Mark Twain",title+author
+12221,"Antony and Cleopatra","William Shakespeare",5540,"Antony and Cleopatra","William Shakespeare",title+author
+92,"Harry Potter and the Sorcerer's Stone","J. K. Rowling",2,"Harry Potter and the Sorcerer's Stone (Harry Potter, #1)","J.K. Rowling",title+author
+2385,"Hard Times","Charles Dickens",2846,"Hard Times","Charles Dickens",title+author
+301,"The House at Riverton","Kate Morton",1361,"The House at Riverton","Kate Morton",isbn
+9284,"The Golden Compass","Philip Pullman",62,"The Golden Compass (His Dark Materials, #1)","Philip Pullman",title+author
+2393,"Crime and Punishment","Fyodor Dostoyevsky",177,"Crime and Punishment","Fyodor Dostoyevsky",title+author
+131,"The Silver Chair","Clive Staples Lewis",602,"The Silver Chair (Chronicles of Narnia, #4)","C.S. Lewis",title+author
+100,"Peter Pan","J. M. Barrie",518,"Peter Pan","J.M. Barrie",title+author
+2410,"The Scarlet Letter","Nathaniel Hawthorne",138,"The Scarlet Letter","Nathaniel Hawthorne",title+author
+49,"Prince Caspian","Clive Staples Lewis",347,"Prince Caspian (Chronicles of Narnia, #2)","C.S. Lewis",title+author
+9302,"The Wonderful Wizard of Oz","Lyman Frank Baum",346,"The Wonderful Wizard of Oz (Oz, #1)","L. Frank Baum",title+author
