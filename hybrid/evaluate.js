@@ -41,6 +41,14 @@
  *   Hybrid-v2   - Hybrid-genre + user mean pulled toward the global mean
  *                 (--mean-shrink 5). (--max-author 2 = at most 2 books per author:
  *                 measured, lowers precision, so off by default.)
+ *   ALS-f..a..  - matrix factorization (implicit-feedback ALS), as in the
+ *                 proposal. Several settings per run: --als-factors 32,64
+ *                 --als-alpha 5,20 --als-reg 0.1 --als-iters 10 --als-cg 3
+ *                 (--no-als skips).
+ *                 Re-trained here on the train ratings only.
+ *   HyALS-...   - Hybrid-v3 with ALS in place of item-item CF.
+ *   HyALS-...-new5 - same, but a book with fewer than 5 train ratings is "new"
+ *                 (only CBF can recommend it), as in the proposal (--new-min).
  *   Hybrid-v3   - Hybrid-v2 + at most 2 books per author among the books chosen
  *                 by POPULARITY only (--pop-author). CF's picks are never removed.
  *
@@ -117,6 +125,18 @@ const MIN_USER_RATINGS = 20;
 // Hybrid-genre / Hybrid-v2 (questionnaire simulation)
 const GENRES_PICKED = arg("--genres-picked", 3); // the user "chose" his 3 most common genres
 const MEAN_SHRINK = arg("--mean-shrink", 5);     // Hybrid-v2: user mean pulled toward the global mean
+// ALS (implicit feedback, Hu, Koren & Volinsky 2008) - several settings in one run
+function listArg(name, def) {
+  const i = process.argv.indexOf(name);
+  return (i > -1 ? process.argv[i + 1] : def).split(",").map(Number);
+}
+const ALS_FACTORS = listArg("--als-factors", "128");    // chosen: 128 (grid 32/64/128) // vector size per user / book
+const ALS_ALPHA = listArg("--als-alpha", "10");        // confidence: c = 1 + alpha * rating / 5
+const ALS_REG = listArg("--als-reg", "0.1");           // regularization (lambda)
+const ALS_ITERS = arg("--als-iters", 10);
+const ALS_CG = arg("--als-cg", 3);                      // conjugate-gradient steps per solve
+const NO_ALS = process.argv.includes("--no-als");
+const NEW_MIN = arg("--new-min", 5);              // HyALS-...-new5: a book with fewer ratings = "new" (CBF only), as in the proposal
 const POP_PER_AUTHOR = arg("--pop-author", 2);   // Hybrid-v3: books per author among POPULARITY picks
 const MAX_PER_AUTHOR = arg("--max-author", 99);  // Hybrid-v2: books per author (99 = no limit; 2 cost 1.5 points)
 const LIKED = 4; // rating >= 4 = "liked"
@@ -137,6 +157,11 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
+
+// Neon closes idle connections (e.g. when the database sleeps during the long
+// calculations). That is harmless here - all reads are done - so it must not
+// crash the script.
+pool.on("error", (err) => console.warn(`(database connection closed: ${err.message} - ignored)`));
 
 function seededRandom(seed) {
   let s = seed >>> 0;
@@ -348,6 +373,99 @@ function trainItemCF(uIdx, bIdx, centered, nU, nB) {
   return neighbors;
 }
 
+// ---------- ALS (implicit feedback) ----------
+// Every rating = the user read the book (preference 1), with confidence
+// c = 1 + alpha * rating / 5 (a 5-star rating counts more than a 1-star one).
+// Learns a vector of `f` numbers per user (X) and per book (Y) so that
+// x_u . y_i is close to 1 for books the user read (weighted by c) and to 0
+// otherwise (Hu, Koren & Volinsky 2008). Alternating: fix Y and solve every
+// user, fix X and solve every book. Each solve is the f x f system
+//   (Y^T C_u Y + lambda I) x_u = Y^T C_u p_u
+// solved with a few steps of conjugate gradient, warm-started from the
+// previous value (as the `implicit` library does - much faster than an exact
+// solve, same results).  score(u, i) = x_u . y_i;  a book with no ratings
+// gets y = 0 (score 0).
+function trainALS(uIdx, bIdx, ratingVals, nU, nB, f, alpha, reg, iters, cgSteps = ALS_CG) {
+  const conf = Float32Array.from(ratingVals, (r) => 1 + (alpha * r) / 5);
+  const byUser = buildCSR(uIdx, bIdx, conf, nU);
+  const byItem = buildCSR(bIdx, uIdx, conf, nB);
+  const X = new Float64Array(nU * f);
+  const Y = new Float64Array(nB * f);
+  for (let k = 0; k < X.length; k++) X[k] = (rand() - 0.5) * 0.01;
+  for (let k = 0; k < Y.length; k++) Y[k] = (rand() - 0.5) * 0.01;
+  const G = new Float64Array(f * f);
+  const r = new Float64Array(f), pv = new Float64Array(f), Ap = new Float64Array(f);
+
+  // A v = G v + lambda v + sum_i (c_i - 1) (y_i . v) y_i   (into out)
+  const mulA = (v, out, F, csr, start, end) => {
+    for (let a = 0; a < f; a++) {
+      let s2 = reg * v[a];
+      const ga = a * f;
+      for (let b2 = 0; b2 < f; b2++) s2 += G[ga + b2] * v[b2];
+      out[a] = s2;
+    }
+    for (let q = start; q < end; q++) {
+      const o = csr.other[q] * f;
+      let dot = 0;
+      for (let a = 0; a < f; a++) dot += F[o + a] * v[a];
+      const w = (csr.value[q] - 1) * dot;
+      for (let a = 0; a < f; a++) out[a] += w * F[o + a];
+    }
+  };
+
+  const solveSide = (T, nT, csr, F, nF) => {
+    // G = F^T F (full symmetric) - shared by all rows
+    G.fill(0);
+    for (let j = 0; j < nF; j++) {
+      const o = j * f;
+      for (let a = 0; a < f; a++) {
+        const fa = F[o + a];
+        if (fa === 0) continue;
+        for (let b2 = a; b2 < f; b2++) G[a * f + b2] += fa * F[o + b2];
+      }
+    }
+    for (let a = 0; a < f; a++) for (let b2 = 0; b2 < a; b2++) G[a * f + b2] = G[b2 * f + a];
+
+    const x = new Float64Array(f);
+    for (let t = 0; t < nT; t++) {
+      const start = csr.start[t], end = csr.start[t + 1];
+      const ot = t * f;
+      if (start === end) { for (let a = 0; a < f; a++) T[ot + a] = 0; continue; }
+      for (let a = 0; a < f; a++) x[a] = T[ot + a];
+      // r = b - A x,  b = sum_i c_i y_i
+      mulA(x, Ap, F, csr, start, end);
+      for (let a = 0; a < f; a++) r[a] = -Ap[a];
+      for (let q = start; q < end; q++) {
+        const o = csr.other[q] * f, c = csr.value[q];
+        for (let a = 0; a < f; a++) r[a] += c * F[o + a];
+      }
+      let rs = 0;
+      for (let a = 0; a < f; a++) { pv[a] = r[a]; rs += r[a] * r[a]; }
+      for (let step = 0; step < cgSteps && rs > 1e-10; step++) {
+        mulA(pv, Ap, F, csr, start, end);
+        let pAp = 0;
+        for (let a = 0; a < f; a++) pAp += pv[a] * Ap[a];
+        const al = rs / pAp;
+        let rsNew = 0;
+        for (let a = 0; a < f; a++) {
+          x[a] += al * pv[a];
+          r[a] -= al * Ap[a];
+          rsNew += r[a] * r[a];
+        }
+        for (let a = 0; a < f; a++) pv[a] = r[a] + (rsNew / rs) * pv[a];
+        rs = rsNew;
+      }
+      for (let a = 0; a < f; a++) T[ot + a] = x[a];
+    }
+  };
+
+  for (let it = 0; it < iters; it++) {
+    solveSide(X, nU, byUser, Y, nB);
+    solveSide(Y, nB, byItem, X, nU);
+  }
+  return { X, Y, f };
+}
+
 // ---------- CBF variants ----------
 
 // Subtracts the average embedding of all books and re-normalizes.
@@ -531,6 +649,20 @@ async function main() {
   console.log("Training CF on the train ratings only...");
   const neighbors = trainItemCF(uIdx, bIdx, centered, nU, nB);
 
+  // ALS: one model per combination of settings (factors x alpha x reg)
+  const ratingVals = Float32Array.from(train, (r) => r[2]);
+  const alsModels = [];
+  if (!NO_ALS) {
+    for (const f of ALS_FACTORS) for (const a of ALS_ALPHA) for (const reg of ALS_REG) {
+      const t1 = Date.now();
+      const tag = `f${f}a${a}` + (ALS_REG.length > 1 ? `r${reg}` : "");
+      console.log(`Training ALS ${tag} (${ALS_ITERS} iterations)...`);
+      const m = trainALS(uIdx, bIdx, ratingVals, nU, nB, f, a, reg, ALS_ITERS);
+      alsModels.push({ ...m, name: `ALS-${tag}`, hyName: `HyALS-${tag}` });
+      console.log(`    done in ${Math.round((Date.now() - t1) / 1000)}s`);
+    }
+  }
+
   const embCentered = centerEmbeddings(emb, has, dim, nB);
   console.log("Finding content neighbours for CBF-kNN...");
   const cbfNeighbors = contentNeighbors(embCentered, has, dim, nB, CBF_TOP_K);
@@ -546,7 +678,9 @@ async function main() {
   let maxPop = 0;
   for (let b = 0; b < nB; b++) if (popularity[b] > maxPop) maxPop = popularity[b];
   const popN = Float64Array.from(popularity, (p) => (maxPop ? p / maxPop : 0));
-  const models = ["Random", "Popularity", "CBF-mean", "CBF-centered", "CBF-kNN", "CF", "Proposal-rule", ...hybridNames];
+  const models = ["Random", "Popularity", "CBF-mean", "CBF-centered", "CBF-kNN", "CF",
+    ...alsModels.map((m) => m.name), "Proposal-rule", ...hybridNames,
+    ...alsModels.flatMap((m) => [m.hyName, `${m.hyName}-new${NEW_MIN}`])];
   const totals = Object.fromEntries(models.map((m) => [m, { precision: 0, recall: 0, hit: 0, ndcg: 0, users: 0 }]));
   const recommended = Object.fromEntries(models.map((m) => [m, new Set()]));
 
@@ -751,6 +885,59 @@ async function main() {
     }
     recs["Hybrid-v3"] = [...mainV3, ...newV2];
 
+    // ALS models: pure ALS, and Hybrid-v3 with ALS in place of item-item CF
+    const ui = uIndex.get(u);
+    for (const m of alsModels) {
+      const f = m.f;
+      const als = new Float64Array(nB);
+      if (ui !== undefined) {
+        const ou = ui * f;
+        for (let b = 0; b < nB; b++) {
+          let s2 = 0;
+          const ob = b * f;
+          for (let d = 0; d < f; d++) s2 += m.X[ou + d] * m.Y[ob + d];
+          als[b] = s2;
+        }
+      }
+      recs[m.name] = topK(als, exclude, K);
+
+      const alsN = normalize(als);
+      const ratedA = new Float64Array(nB).fill(-Infinity);
+      for (let b = 0; b < nB; b++) if (ratingCount[b] > 0) ratedA[b] = w * alsN[b] + (1 - w) * popGenre(b);
+      const orderA = [];
+      for (let b = 0; b < nB; b++) if (!exclude.has(b) && ratedA[b] > -Infinity && !newV2.includes(b)) orderA.push(b);
+      orderA.sort((a, b) => ratedA[b] - ratedA[a]);
+      const authorsA = new Map();
+      const mainA = [];
+      for (const b of orderA) {
+        if (mainA.length >= K - newV2.length) break;
+        const a = authorOf[b];
+        const popDriven = (1 - w) * popGenre(b) > w * alsN[b];
+        if (popDriven && a !== undefined && (authorsA.get(a) || 0) >= POP_PER_AUTHOR) continue;
+        if (a !== undefined) authorsA.set(a, (authorsA.get(a) || 0) + 1);
+        mainA.push(b);
+      }
+      recs[m.hyName] = [...mainA, ...newV2];
+
+      // Same, but a book with fewer than NEW_MIN train ratings counts as "new":
+      // only CBF judges it (as in the proposal: CF needs at least 5 ratings)
+      const unratedN = Float64Array.from(kS, (s2, b) =>
+        ratingCount[b] < NEW_MIN && s2 > 0 && kSup[b] >= minNewSupport ? s2 : -Infinity);
+      const newN = topK(unratedN, exclude, FINAL_SLOTS);
+      const orderN = orderA.filter((b) => ratingCount[b] >= NEW_MIN && !newN.includes(b));
+      const authorsN = new Map();
+      const mainN = [];
+      for (const b of orderN) {
+        if (mainN.length >= K - newN.length) break;
+        const a = authorOf[b];
+        const popDriven = (1 - w) * popGenre(b) > w * alsN[b];
+        if (popDriven && a !== undefined && (authorsN.get(a) || 0) >= POP_PER_AUTHOR) continue;
+        if (a !== undefined) authorsN.set(a, (authorsN.get(a) || 0) + 1);
+        mainN.push(b);
+      }
+      recs[`${m.hyName}-new${NEW_MIN}`] = [...mainN, ...newN];
+    }
+
     for (const m of models) {
       const r = metrics(recs[m], relevant, K);
       const t = totals[m];
@@ -768,7 +955,7 @@ async function main() {
   const pct = (x) => (x * 100).toFixed(2) + "%";
   const lines = [`model,precision@${K},recall@${K},hitrate@${K},ndcg@${K},coverage`];
   console.log(`\n================ RESULTS (K=${K}, ${testUsers.length} users) ================`);
-  console.log(`${"Model".padEnd(16)}${`Precision@${K}`.padEnd(15)}${`Recall@${K}`.padEnd(13)}${`HitRate@${K}`.padEnd(14)}${`NDCG@${K}`.padEnd(11)}Coverage`);
+  console.log(`${"Model".padEnd(22)}${`Precision@${K}`.padEnd(15)}${`Recall@${K}`.padEnd(13)}${`HitRate@${K}`.padEnd(14)}${`NDCG@${K}`.padEnd(11)}Coverage`);
   for (const m of models) {
     const t = totals[m];
     const row = {
@@ -779,7 +966,7 @@ async function main() {
       c: recommended[m].size / nB,
     };
     console.log(
-      `${m.padEnd(16)}${pct(row.p).padEnd(15)}${pct(row.r).padEnd(13)}${pct(row.h).padEnd(14)}${pct(row.n).padEnd(11)}${pct(row.c)}`
+      `${m.padEnd(22)}${pct(row.p).padEnd(15)}${pct(row.r).padEnd(13)}${pct(row.h).padEnd(14)}${pct(row.n).padEnd(11)}${pct(row.c)}`
     );
     lines.push([m, row.p, row.r, row.h, row.n, row.c].map((x) => (typeof x === "number" ? x.toFixed(4) : x)).join(","));
   }

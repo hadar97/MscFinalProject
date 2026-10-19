@@ -1,9 +1,14 @@
 /**
- * The HYBRID recommender - the one the app calls.  (version 2)
+ * The HYBRID recommender - the one the app calls.  (version 3: ALS)
  *
  * Chosen by measurement on the VALIDATION set (2,000 users, evaluate.js):
- *   regular users  - Precision@10 18.48%  (CF alone 18.31%, previous hybrid 18.18%)
- *   new users (5)  - Precision@10  6.85%  (CF alone 5.86%, proposal rule 3.13%)
+ *   regular users  - Precision@10 20.95%  (item-item CF 18.31%, previous hybrid 18.48%)
+ *   new users (5)  - Precision@10  7.94%  (item-item CF 5.86%, proposal rule 3.13%)
+ *
+ * CF = ALS (matrix factorization, as in the proposal): the book vectors come
+ * from CF/train-als.js (table als_item_factors); the user's vector is computed
+ * here, from his ratings, with one small solve (foldInUser). If the ALS tables
+ * do not exist yet, it falls back to item-item CF (item_similarity).
  *
  *   1. Books WITH ratings (count - slots places):
  *        score = w * CF + (1 - w) * GenrePopularity,   w = n / (n + BETA)
@@ -15,7 +20,7 @@
  *      among the books he liked). "Popular in your genres", not "popular with
  *      everyone" (which gave Harry Potter to everybody).
  *
- *   2. Books WITHOUT ratings (Google books) - `slots` places:
+ *   2. NEW books - fewer than 5 ratings (Google books have none) - `slots` places:
  *      only CBF can judge them: the best by content similarity to the user's
  *      books, and only if similar to at least 2 of them. Default 2 places; if
  *      the user chose genres that exist only in Google books (Technology,
@@ -30,7 +35,8 @@
  *   (A limit on ALL books cost 1.5 points of precision for regular users: the
  *   next book in a series - a CF pick - is often exactly what they want.)
  *
- * Tables used: item_similarity (CF/train-cf.js), content_similarity
+ * Tables used: als_item_factors + als_model (CF/train-als.js), item_similarity
+ * (CF/train-cf.js, fallback), content_similarity
  * (CBF/train-cbf.js), book_popularity (HYBRID/build-popularity.js), books
  * (main_genres, categories), dataset_ratings (global mean, once).
  *
@@ -48,6 +54,7 @@ const path = require("path");
 const { Pool } = require("pg");
 require("dotenv").config();
 const { GENRES, expandGenres, genreCondition } = require(path.join(__dirname, "..", "onboarding", "genres"));
+const { foldInUser, toVectorLiteral } = require(path.join(__dirname, "..", "CF", "als"));
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -62,7 +69,50 @@ const MEAN_SHRINK = 5;          // user mean pulled toward the global mean
 const GENRES_INFERRED = 3;      // genres taken from the user's books when he did not choose
 const OUTSIDE_GENRE = 0.01;     // tiny popularity for books outside his genres - only breaks ties
 const CANDIDATES = 300;         // candidates fetched from each source before mixing
-const POP_PER_AUTHOR = 2;       // max books per author among POPULARITY picks (CF picks unlimited)
+const POP_PER_AUTHOR = 2;
+const NEW_BOOK_MAX_RATINGS = 5; // a book with fewer ratings is "new": only CBF judges it (as in the proposal)       // max books per author among POPULARITY picks (CF picks unlimited)
+
+// The ALS model (settings + Y^T Y) - read once; null if CF/train-als.js was not run
+let alsPromise = null;
+function getAlsModel() {
+  if (!alsPromise) {
+    alsPromise = pool
+      .query(`SELECT factors, alpha, reg, yty FROM als_model WHERE id = 1;`)
+      .then((r) => (r.rows[0] ? { ...r.rows[0], yty: Float64Array.from(r.rows[0].yty) } : null))
+      .catch((err) => {
+        if (err.code === "42P01") { // table does not exist
+          console.warn("als_model not found - run CF/train-als.js. Using item-item CF meanwhile.");
+          return null;
+        }
+        alsPromise = null;
+        throw err;
+      });
+  }
+  return alsPromise;
+}
+
+/** ALS candidates: score(i) = x_u . y_i, x_u computed from the user's ratings */
+async function alsCandidates(model, bookIds, stars) {
+  const { rows } = await pool.query(
+    `SELECT book_id, factors::text AS v FROM als_item_factors WHERE book_id = ANY($1::int[]);`,
+    [bookIds]
+  );
+  if (!rows.length) return [];
+  const starOf = new Map(bookIds.map((id, i) => [id, stars[i]]));
+  const rated = rows.map((r) => ({ vector: JSON.parse(r.v), rating: starOf.get(r.book_id) }));
+  const x = foldInUser(model.yty, rated, model.factors, model.alpha, model.reg);
+  // <#> = NEGATIVE inner product in pgvector, so ascending order = highest score first
+  const { rows: cands } = await pool.query(
+    `SELECT a.book_id AS id, -(a.factors <#> $1::vector) AS score
+     FROM als_item_factors a
+     JOIN book_popularity p ON p.book_id = a.book_id AND p.ratings_count >= $4
+     WHERE a.book_id <> ALL($2::int[])
+     ORDER BY a.factors <#> $1::vector
+     LIMIT $3;`,
+    [toVectorLiteral(x), bookIds, CANDIDATES, NEW_BOOK_MAX_RATINGS]
+  );
+  return cands;
+}
 
 // Global mean rating (all readers) - read once
 let globalMeanPromise = null;
@@ -139,9 +189,14 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
   const globalMean = await getGlobalMean();
   const mean = (stars.reduce((a, b) => a + b, 0) + MEAN_SHRINK * globalMean) / (n + MEAN_SHRINK);
 
-  // 1a. CF candidates: score(j) = sum_i sim(i,j) * (r_i - mean)
-  const cf = n
-    ? (await pool.query(
+  // 1a. CF candidates: ALS (score = x_u . y_i), or item-item if ALS is not trained:
+  //     score(j) = sum_i sim(i,j) * (r_i - mean)
+  const alsModel = n ? await getAlsModel() : null;
+  const cf = !n
+    ? []
+    : alsModel
+    ? await alsCandidates(alsModel, bookIds, stars)
+    : (await pool.query(
         `WITH mine AS (SELECT * FROM unnest($1::int[], $2::int[]) AS t(book_id, rating))
          SELECT s.neighbor_id AS id,
                 sum(s.similarity * (mine.rating - $3::float8)) AS score
@@ -153,25 +208,24 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
          ORDER BY score DESC
          LIMIT $5;`,
         [bookIds, stars, mean, CF_MIN_SUPPORT, CANDIDATES]
-      )).rows
-    : [];
+      )).rows;
 
   // 1b. Popularity inside the user's genres (+ the global most liked, as a fallback)
   const { rows: popular } = await pool.query(
     `(SELECT p.book_id AS id, p.liked_count, ${genreCondition("$1", "$2")} AS in_genre
       FROM book_popularity p JOIN books b ON b.id = p.book_id
-      WHERE ${genreCondition("$1", "$2")} AND p.book_id <> ALL($3::int[])
+      WHERE ${genreCondition("$1", "$2")} AND p.book_id <> ALL($3::int[]) AND p.ratings_count >= $7
       ORDER BY p.liked_count DESC LIMIT $4)
      UNION
      (SELECT p.book_id, p.liked_count, ${genreCondition("$1", "$2")}
       FROM book_popularity p JOIN books b ON b.id = p.book_id
-      WHERE p.book_id <> ALL($3::int[])
+      WHERE p.book_id <> ALL($3::int[]) AND p.ratings_count >= $7
       ORDER BY p.liked_count DESC LIMIT $5)
      UNION
      (SELECT p.book_id, p.liked_count, ${genreCondition("$1", "$2")}
       FROM book_popularity p JOIN books b ON b.id = p.book_id
-      WHERE p.book_id = ANY($6::int[]));`,
-    [goodreads, google, bookIds, CANDIDATES, CANDIDATES, cf.map((r) => r.id)]
+      WHERE p.book_id = ANY($6::int[]) AND p.ratings_count >= $7);`,
+    [goodreads, google, bookIds, CANDIDATES, CANDIDATES, cf.map((r) => r.id), NEW_BOOK_MAX_RATINGS]
   );
   const maxInGenre = Math.max(0, ...popular.filter((r) => r.in_genre).map((r) => r.liked_count));
   const maxAll = Math.max(1, ...popular.map((r) => r.liked_count));
@@ -204,7 +258,7 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
          JOIN content_similarity s ON s.book_id = mine.book_id
          JOIN books nb ON nb.id = s.neighbor_id
          LEFT JOIN book_popularity p ON p.book_id = s.neighbor_id
-         WHERE p.book_id IS NULL                  -- no ratings at all
+         WHERE coalesce(p.ratings_count, 0) < $7  -- "new": fewer than 5 ratings
            AND s.neighbor_id <> ALL($1::int[])
          GROUP BY s.neighbor_id, nb.categories
          HAVING sum(s.similarity * (mine.rating - $3::float8)) > 0
@@ -214,7 +268,8 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
             AND count(*) >= CASE WHEN nb.categories && $6::text[] THEN 1 ELSE $5 END
          ORDER BY score DESC
          LIMIT $4;`,
-        [bookIds, stars, mean, slots, Math.min(NEW_BOOK_MIN_SUPPORT, n), options.genres?.length ? google : []]
+        [bookIds, stars, mean, slots, Math.min(NEW_BOOK_MIN_SUPPORT, n), options.genres?.length ? google : [],
+         NEW_BOOK_MAX_RATINGS]
       )).rows
     : [];
 
@@ -262,6 +317,7 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
   const byId = new Map(details.map((d) => [d.id, d]));
   return {
     cfWeight: w,
+    cfModel: !n ? "none - no ratings" : alsModel ? "ALS" : "item-item",
     genres,
     recommendations: picked.map((p) => ({ ...byId.get(p.id), ...p })),
   };

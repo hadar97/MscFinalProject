@@ -22,7 +22,7 @@ function formatAuthors(a) {
 }
 
 function print(result) {
-  console.log(`CF weight for this user: ${(result.cfWeight * 100).toFixed(0)}%   genres: ${result.genres.join(", ") || "-"}`);
+  console.log(`CF (${result.cfModel}) weight for this user: ${(result.cfWeight * 100).toFixed(0)}%   genres: ${result.genres.join(", ") || "-"}`);
   result.recommendations.forEach((r, i) => {
     const source = r.goodbooks_id ? "[10K]   " : "[Google]";
     console.log(
