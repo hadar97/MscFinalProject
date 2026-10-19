@@ -249,7 +249,9 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
     .sort((a, b) => b.score - a.score);
 
   // 2. Books without ratings: best by CBF (content neighbours of the user's books)
-  const newBooks = n && slots
+  // (fetch a few extra: a candidate is skipped if it is another edition of a
+  // book already in the list or rated by the user)
+  const newCands = n && slots
     ? (await pool.query(
         `WITH mine AS (SELECT * FROM unnest($1::int[], $2::int[]) AS t(book_id, rating))
          SELECT s.neighbor_id AS id,
@@ -268,17 +270,21 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
             AND count(*) >= CASE WHEN nb.categories && $6::text[] THEN 1 ELSE $5 END
          ORDER BY score DESC
          LIMIT $4;`,
-        [bookIds, stars, mean, slots, Math.min(NEW_BOOK_MIN_SUPPORT, n), options.genres?.length ? google : [],
+        [bookIds, stars, mean, slots * 4, Math.min(NEW_BOOK_MIN_SUPPORT, n), options.genres?.length ? google : [],
          NEW_BOOK_MAX_RATINGS]
       )).rows
     : [];
 
-  // Authors of the candidates (for the limit below)
+  // Authors and titles of the candidates and of the user's own books
   const { rows: auth } = await pool.query(
-    `SELECT id, lower(authors[1]) AS author FROM books WHERE id = ANY($1::int[]);`,
-    [rated.slice(0, CANDIDATES).map((r) => r.id)]
+    `SELECT id, lower(authors[1]) AS author, title FROM books WHERE id = ANY($1::int[]);`,
+    [[...rated.slice(0, CANDIDATES).map((r) => r.id), ...newCands.map((r) => r.id), ...bookIds]]
   );
   const authorOf = new Map(auth.map((r) => [r.id, r.author]));
+  // Same title = same book (another edition, e.g. a Google copy of a 10K book)
+  const titleKey = (t) => String(t || "").toLowerCase().replace(/\(.*?\)/g, "").replace(/[^\p{L}\p{N}]/gu, "");
+  const titleOf = new Map(auth.map((r) => [r.id, titleKey(r.title)]));
+  const seenTitles = new Set(bookIds.map((id) => titleOf.get(id)).filter(Boolean));
 
   // Combine: (count - new books) rated books + the new books.
   // At most POP_PER_AUTHOR books per author among the books that are here
@@ -286,26 +292,46 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
   // like you liked it, e.g. the next book in a series - is never removed.
   const picked = [];
   const perAuthor = new Map();
-  for (const r of rated) {
-    if (picked.length >= count - newBooks.length) break;
-    const byCf = r.cf > 0 && w * r.cf >= (1 - w) * r.popularity;
-    const a = authorOf.get(r.id);
-    if (!byCf && a && (perAuthor.get(a) || 0) >= POP_PER_AUTHOR) continue;
-    if (a) perAuthor.set(a, (perAuthor.get(a) || 0) + 1);
-    picked.push({
-      ...r,
-      reason: byCf
-        ? "Readers with similar taste liked it (CF)"
-        : inGenre.has(r.id)
-          ? "Popular in your genres"
-          : "Popular with readers",
-    });
-  }
-  for (const r of newBooks) {
+  let next = 0; // position in `rated`
+  const pickRated = (limit) => {
+    while (picked.length < limit && next < rated.length) {
+      const r = rated[next++];
+      const t = titleOf.get(r.id);
+      if (t && seenTitles.has(t)) continue; // another edition of a book already here / rated
+      const byCf = r.cf > 0 && w * r.cf >= (1 - w) * r.popularity;
+      const a = authorOf.get(r.id);
+      if (!byCf && a && (perAuthor.get(a) || 0) >= POP_PER_AUTHOR) continue;
+      if (a) perAuthor.set(a, (perAuthor.get(a) || 0) + 1);
+      if (t) seenTitles.add(t);
+      picked.push({
+        ...r,
+        reason: byCf
+          ? "Readers with similar taste liked it (CF)"
+          : inGenre.has(r.id)
+            ? "Popular in your genres"
+            : "Popular with readers",
+      });
+    }
+  };
+  pickRated(count - Math.min(slots, newCands.length));
+  let newPicked = 0;
+  for (const r of newCands) {
+    if (newPicked >= slots || picked.length >= count) break;
+    const t = titleOf.get(r.id);
+    if (t && seenTitles.has(t)) continue;
+    if (t) seenTitles.add(t);
     picked.push({
       id: r.id, score: Number(r.score), cf: 0, popularity: 0,
       reason: "Similar in content to books you liked - new, no ratings yet (CBF)",
     });
+    newPicked++;
+  }
+  // Too few new books after removing editions -> fill with more rated books,
+  // keeping the new books at the end
+  if (picked.length < count) {
+    const newOnes = picked.splice(picked.length - newPicked, newPicked);
+    pickRated(count - newOnes.length);
+    picked.push(...newOnes);
   }
 
   // Book details, in the same order
