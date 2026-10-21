@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* BookBridge – "autumn library": warm parchment, rust, moss and gold */
+@theme {
+  --color-parchment: #F7F1E8;
+  --color-cream: #FFFBF4;
+  --color-sand: #EDE1CE;
+  --color-line: #E6D9C6;
+  --color-line-strong: #D8C8B2;
+  --color-ink: #2B211C;
+  --color-ink-soft: #5E4E42;
+  --color-muted: #6B5B4E;
+  --color-rust: #A24B25;
+  --color-rust-dark: #7E3818;
+  --color-rust-soft: #F3DED2;
+  --color-moss: #556030;
+  --color-moss-dark: #3E4722;
+  --color-moss-soft: #E3E6D3;
+  --color-gold: #B8893B;
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+}
+
+html, body { background: var(--color-parchment); color: var(--color-ink); }
+body { font-family: var(--font-sans); }
+a { color: var(--color-rust); }
+a:hover { color: var(--color-rust-dark); }
+:focus-visible { outline: 2px solid var(--color-rust); outline-offset: 2px; }
+
+/* buttons used across the site */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border-radius: 999px; padding: .85rem 1.6rem; font-weight: 700; text-decoration: none; cursor: pointer; transition: background .15s, color .15s; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary { background: var(--color-rust); color: var(--color-cream); }
+.btn-primary:hover { background: var(--color-rust-dark); color: var(--color-cream); }
+.btn-dark { background: var(--color-ink); color: var(--color-parchment); }
+.btn-dark:hover { background: #000; color: var(--color-parchment); }
+.btn-outline { border: 1px solid var(--color-ink); color: var(--color-ink); background: transparent; font-weight: 500; }
+.btn-outline:hover { background: var(--color-ink); color: var(--color-parchment); }
+.icon-btn { width: 2.25rem; height: 2.25rem; border-radius: 999px; border: 1px solid var(--color-line-strong); background: var(--color-cream); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.icon-btn:hover { border-color: var(--color-ink); }
+.card { background: var(--color-cream); border: 1px solid var(--color-line); border-radius: 1rem; }
+.field { font: inherit; width: 100%; padding: .8rem .9rem; border: 1px solid var(--color-line-strong); border-radius: .75rem; background: var(--color-cream); color: var(--color-ink); }
+.eyebrow { font-size: .8rem; letter-spacing: .15em; text-transform: uppercase; color: var(--color-rust); font-weight: 700; }

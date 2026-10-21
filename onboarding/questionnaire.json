@@ -1,275 +1,165 @@
 {
-  "version": 1,
-  "direction": "rtl",
+  "version": 2,
+  "language": "en",
+  "direction": "ltr",
   "steps": [
     {
       "id": "welcome",
       "type": "intro",
       "enabled": true,
-      "title": {
-        "he": "ברוכים הבאים ל-RecoRead!",
-        "en": "Welcome to RecoRead!"
-      },
-      "body": {
-        "he": "כדי שנוכל להמליץ לכם על ספרים שבאמת מתאימים לכם, נשאל כמה שאלות קצרות על הטעם שלכם. זה לוקח בערך שתי דקות.",
-        "en": "To recommend books that really fit you, we'll ask a few short questions about your taste. It takes about two minutes."
-      },
-      "primaryButton": {
-        "he": "בואו נתחיל",
-        "en": "Let's start"
-      },
-      "secondaryButton": {
-        "he": "דלגו בינתיים",
-        "en": "Skip for now"
-      }
+      "title": "Welcome to BookBridge!",
+      "body": "To recommend books that really fit you, we'll ask a few short questions about your taste. It takes about two minutes.",
+      "primaryButton": "Let's start",
+      "secondaryButton": "Skip for now"
     },
     {
       "id": "genres",
       "type": "multiSelect",
       "enabled": true,
-      "title": {
-        "he": "מה אתם אוהבים לקרוא?",
-        "en": "What do you like to read?"
-      },
-      "subtitle": {
-        "he": "בחרו בין 3 ל-5 ז'אנרים",
-        "en": "Choose 3 to 5 genres"
-      },
+      "title": "What do you like to read?",
+      "subtitle": "Choose 3 to 5 genres",
       "min": 3,
       "max": 5,
       "groups": [
         {
           "id": "fiction",
-          "title": {
-            "he": "סיפורת",
-            "en": "Fiction"
-          }
+          "title": "Fiction"
         },
         {
           "id": "nonfiction",
-          "title": {
-            "he": "עיון",
-            "en": "Nonfiction"
-          }
+          "title": "Nonfiction"
         }
       ],
       "options": [
         {
           "value": "fantasy",
-          "label": {
-            "he": "פנטזיה",
-            "en": "Fantasy"
-          },
+          "label": "Fantasy",
           "group": "fiction"
         },
         {
           "value": "science-fiction",
-          "label": {
-            "he": "מדע בדיוני",
-            "en": "Science Fiction"
-          },
+          "label": "Science Fiction",
           "group": "fiction"
         },
         {
           "value": "mystery-crime",
-          "label": {
-            "he": "מתח ובלש",
-            "en": "Mystery & Crime"
-          },
+          "label": "Mystery & Crime",
           "group": "fiction"
         },
         {
           "value": "thriller",
-          "label": {
-            "he": "מותחן",
-            "en": "Thriller & Suspense"
-          },
+          "label": "Thriller & Suspense",
           "group": "fiction"
         },
         {
           "value": "romance",
-          "label": {
-            "he": "רומנטיקה",
-            "en": "Romance"
-          },
+          "label": "Romance",
           "group": "fiction"
         },
         {
           "value": "historical",
-          "label": {
-            "he": "סיפורת היסטורית",
-            "en": "Historical Fiction"
-          },
+          "label": "Historical Fiction",
           "group": "fiction"
         },
         {
           "value": "contemporary",
-          "label": {
-            "he": "סיפורת עכשווית",
-            "en": "Contemporary Fiction"
-          },
+          "label": "Contemporary Fiction",
           "group": "fiction"
         },
         {
           "value": "classics",
-          "label": {
-            "he": "קלאסיקות",
-            "en": "Classics"
-          },
+          "label": "Classics",
           "group": "fiction"
         },
         {
           "value": "young-adult",
-          "label": {
-            "he": "נוער וילדים",
-            "en": "Young Adult & Children"
-          },
+          "label": "Young Adult & Children",
           "group": "fiction"
         },
         {
           "value": "horror",
-          "label": {
-            "he": "אימה",
-            "en": "Horror"
-          },
+          "label": "Horror",
           "group": "fiction"
         },
         {
           "value": "comics",
-          "label": {
-            "he": "קומיקס ורומן גרפי",
-            "en": "Comics & Graphic Novels"
-          },
+          "label": "Comics & Graphic Novels",
           "group": "fiction"
         },
         {
           "value": "poetry-drama",
-          "label": {
-            "he": "שירה ומחזות",
-            "en": "Poetry & Drama"
-          },
+          "label": "Poetry & Drama",
           "group": "fiction"
         },
         {
           "value": "biography",
-          "label": {
-            "he": "ביוגרפיה וזיכרונות",
-            "en": "Biography & Memoir"
-          },
+          "label": "Biography & Memoir",
           "group": "nonfiction"
         },
         {
           "value": "history-politics",
-          "label": {
-            "he": "היסטוריה ופוליטיקה",
-            "en": "History & Politics"
-          },
+          "label": "History & Politics",
           "group": "nonfiction"
         },
         {
           "value": "science-nature",
-          "label": {
-            "he": "מדע וטבע",
-            "en": "Science & Nature"
-          },
+          "label": "Science & Nature",
           "group": "nonfiction"
         },
         {
           "value": "psychology",
-          "label": {
-            "he": "פסיכולוגיה ושיפור עצמי",
-            "en": "Psychology & Self-Help"
-          },
+          "label": "Psychology & Self-Help",
           "group": "nonfiction"
         },
         {
           "value": "philosophy",
-          "label": {
-            "he": "פילוסופיה ודת",
-            "en": "Philosophy & Religion"
-          },
+          "label": "Philosophy & Religion",
           "group": "nonfiction"
         },
         {
           "value": "business",
-          "label": {
-            "he": "עסקים וכלכלה",
-            "en": "Business & Economics"
-          },
+          "label": "Business & Economics",
           "group": "nonfiction"
         },
         {
           "value": "technology",
-          "label": {
-            "he": "טכנולוגיה ומחשבים",
-            "en": "Technology & Computers"
-          },
+          "label": "Technology & Computers",
           "group": "nonfiction"
         },
         {
           "value": "health",
-          "label": {
-            "he": "בריאות ורפואה",
-            "en": "Health & Medicine"
-          },
+          "label": "Health & Medicine",
           "group": "nonfiction"
         },
         {
           "value": "arts",
-          "label": {
-            "he": "אמנות, עיצוב ומוזיקה",
-            "en": "Art, Design & Music"
-          },
+          "label": "Art, Design & Music",
           "group": "nonfiction"
         },
         {
           "value": "lifestyle",
-          "label": {
-            "he": "טיולים, אוכל ותחביבים",
-            "en": "Travel, Food & Hobbies"
-          },
+          "label": "Travel, Food & Hobbies",
           "group": "nonfiction"
         },
         {
           "value": "education",
-          "label": {
-            "he": "חינוך ושפה",
-            "en": "Education & Language"
-          },
+          "label": "Education & Language",
           "group": "nonfiction"
         }
       ],
       "errors": {
-        "tooFew": {
-          "he": "בחרו לפחות 3 ז'אנרים",
-          "en": "Choose at least 3 genres"
-        },
-        "tooMany": {
-          "he": "אפשר לבחור עד 5 ז'אנרים",
-          "en": "You can choose up to 5 genres"
-        }
+        "tooFew": "Choose at least 3 genres",
+        "tooMany": "You can choose up to 5 genres"
       },
-      "counter": {
-        "he": "נבחרו {n} מתוך 5",
-        "en": "{n} of 5 selected"
-      },
-      "primaryButton": {
-        "he": "המשך",
-        "en": "Continue"
-      }
+      "counter": "{n} of 5 selected",
+      "primaryButton": "Continue"
     },
     {
       "id": "rateBooks",
       "type": "rating",
       "enabled": true,
-      "title": {
-        "he": "דרגו ספרים שקראתם",
-        "en": "Rate books you've read"
-      },
-      "subtitle": {
-        "he": "הנה ספרים מהז'אנרים שבחרתם. דרגו את מה שקראתם, ועל השאר סמנו \"לא קראתי\".",
-        "en": "Here are books from your genres. Rate the ones you've read and mark the rest \"haven't read\"."
-      },
+      "title": "Rate books you've read",
+      "subtitle": "Here are books from your genres. Rate the ones you've read and mark the rest \"haven't read\".",
       "source": "POST /api/onboarding/books",
       "bookCount": 20,
       "groupByGenre": true,
@@ -279,148 +169,80 @@
         "labels": [
           {
             "value": 1,
-            "he": "לא אהבתי בכלל",
-            "en": "Didn't like it at all"
+            "label": "Didn't like it at all"
           },
           {
             "value": 2,
-            "he": "לא אהבתי",
-            "en": "Didn't like it"
+            "label": "Didn't like it"
           },
           {
             "value": 3,
-            "he": "בסדר",
-            "en": "It was OK"
+            "label": "It was OK"
           },
           {
             "value": 4,
-            "he": "אהבתי",
-            "en": "Liked it"
+            "label": "Liked it"
           },
           {
             "value": 5,
-            "he": "אהבתי מאוד",
-            "en": "Loved it"
+            "label": "Loved it"
           }
         ]
       },
       "notRead": {
         "value": null,
-        "label": {
-          "he": "לא קראתי",
-          "en": "Haven't read"
-        }
+        "label": "Haven't read"
       },
       "recommendedMin": 3,
-      "hint": {
-        "he": "ככל שתדרגו יותר ספרים, ההמלצות יהיו מדויקות יותר.",
-        "en": "The more books you rate, the better your recommendations."
-      },
-      "lowRatingsConfirm": {
-        "he": "דירגתם פחות מ-3 ספרים. אפשר להמשיך, אבל ההמלצות יהיו כלליות יותר. להמשיך בכל זאת?",
-        "en": "You rated fewer than 3 books. You can continue, but recommendations will be more general. Continue anyway?"
-      },
+      "hint": "The more books you rate, the better your recommendations.",
+      "lowRatingsConfirm": "You rated fewer than 3 books. You can continue, but recommendations will be more general. Continue anyway?",
       "googleOnlyGenres": [
         "technology",
         "health",
         "education"
       ],
-      "primaryButton": {
-        "he": "המשך",
-        "en": "Continue"
-      },
-      "backButton": {
-        "he": "חזרה לז'אנרים",
-        "en": "Back to genres"
-      }
+      "primaryButton": "Continue",
+      "backButton": "Back to genres"
     },
     {
       "id": "authors",
       "type": "search",
       "enabled": false,
       "optional": true,
-      "title": {
-        "he": "יש סופרים שאתם אוהבים במיוחד?",
-        "en": "Any authors you especially like?"
-      },
-      "subtitle": {
-        "he": "לא חובה. הקלידו שם וחפשו",
-        "en": "Optional. Type a name to search"
-      },
-      "placeholder": {
-        "he": "למשל: J. K. Rowling",
-        "en": "e.g. J. K. Rowling"
-      },
+      "title": "Any authors you especially like?",
+      "subtitle": "Optional. Type a name to search",
+      "placeholder": "e.g. J. K. Rowling",
       "max": 5,
-      "primaryButton": {
-        "he": "המשך",
-        "en": "Continue"
-      },
-      "skipButton": {
-        "he": "דלג",
-        "en": "Skip"
-      }
+      "primaryButton": "Continue",
+      "skipButton": "Skip"
     },
     {
       "id": "freeText",
       "type": "text",
       "enabled": false,
       "optional": true,
-      "title": {
-        "he": "ספרו לנו במילים שלכם",
-        "en": "Tell us in your own words"
-      },
-      "subtitle": {
-        "he": "לא חובה. איזה ספר הייתם רוצים לקרוא עכשיו?",
-        "en": "Optional. What kind of book would you like to read now?"
-      },
-      "placeholder": {
-        "he": "למשל: משהו מותח עם גיבורה חזקה, לא ארוך מדי",
-        "en": "e.g. something suspenseful with a strong heroine, not too long"
-      },
+      "title": "Tell us in your own words",
+      "subtitle": "Optional. What kind of book would you like to read now?",
+      "placeholder": "e.g. something suspenseful with a strong heroine, not too long",
       "maxLength": 300,
-      "primaryButton": {
-        "he": "סיום",
-        "en": "Finish"
-      },
-      "skipButton": {
-        "he": "דלג",
-        "en": "Skip"
-      }
+      "primaryButton": "Finish",
+      "skipButton": "Skip"
     },
     {
       "id": "done",
       "type": "loading",
       "enabled": true,
-      "title": {
-        "he": "מכינים לכם המלצות...",
-        "en": "Preparing your recommendations..."
-      },
-      "body": {
-        "he": "עוד רגע תראו 10 ספרים שבחרנו במיוחד בשבילכם.",
-        "en": "In a moment you'll see 10 books picked just for you."
-      },
+      "title": "Preparing your recommendations...",
+      "body": "In a moment you'll see 10 books picked just for you.",
       "submit": "POST /api/onboarding/submit",
       "next": "/recommendations"
     }
   ],
   "reasonLabels": {
-    "Readers with similar taste liked it (CF)": {
-      "he": "קוראים עם טעם דומה לשלכם אהבו אותו",
-      "en": "Readers with similar taste liked it"
-    },
-    "Popular in your genres": {
-      "he": "פופולרי בז'אנרים שבחרתם",
-      "en": "Popular in your genres"
-    },
-    "Popular with readers": {
-      "he": "פופולרי בקרב קוראים",
-      "en": "Popular with readers"
-    },
-    "Similar in content to books you liked - new, no ratings yet (CBF)": {
-      "he": "דומה בתוכן לספרים שאהבתם",
-      "en": "Similar in content to books you liked"
-    }
+    "Readers with similar taste liked it (CF)": "Readers with similar taste liked it",
+    "Popular in your genres": "Popular in your genres",
+    "Popular with readers": "Popular with readers",
+    "Similar in content to books you liked - new, no ratings yet (CBF)": "Similar in content to books you liked"
   },
   "api": {
     "POST /api/onboarding/books": {

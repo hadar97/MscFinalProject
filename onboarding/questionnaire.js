@@ -36,9 +36,13 @@ const FICTION_KEYS = new Set([
 // in the questionnaire, and books of these genres are recommended by CBF
 const GOOGLE_ONLY = new Set(GENRES.filter((g) => g.goodreads.length === 0).map((g) => g.key));
 
-const QUESTIONNAIRE = {
-  version: 1,
-  direction: "rtl",
+// The texts are written in Hebrew and English ({ he, en }); the app is in
+// ENGLISH, so the exported QUESTIONNAIRE keeps only the English texts
+// (see toEnglish below). The Hebrew stays here in case a Hebrew version is added.
+const QUESTIONNAIRE_TEXTS = {
+  version: 2,
+  language: "en",
+  direction: "ltr",
 
   steps: [
     // ---------------------------------------------------------------- 1
@@ -46,7 +50,7 @@ const QUESTIONNAIRE = {
       id: "welcome",
       type: "intro",
       enabled: true,
-      title: { he: "ברוכים הבאים ל-RecoRead!", en: "Welcome to RecoRead!" },
+      title: { he: "ברוכים הבאים ל-BookBridge!", en: "Welcome to BookBridge!" },
       body: {
         he: "כדי שנוכל להמליץ לכם על ספרים שבאמת מתאימים לכם, נשאל כמה שאלות קצרות על הטעם שלכם. זה לוקח בערך שתי דקות.",
         en: "To recommend books that really fit you, we'll ask a few short questions about your taste. It takes about two minutes.",
@@ -211,6 +215,19 @@ const QUESTIONNAIRE = {
     },
   },
 };
+
+// { he, en } -> "en text";  { value, he, en } -> { value, label: "en text" }
+function toEnglish(x) {
+  if (Array.isArray(x)) return x.map(toEnglish);
+  if (!x || typeof x !== "object") return x;
+  if ("en" in x && "he" in x) {
+    const { he, en, ...rest } = x; // eslint-disable-line no-unused-vars
+    return Object.keys(rest).length ? { ...toEnglish(rest), label: en } : en;
+  }
+  return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, toEnglish(v)]));
+}
+
+const QUESTIONNAIRE = toEnglish(QUESTIONNAIRE_TEXTS);
 
 module.exports = { QUESTIONNAIRE };
 

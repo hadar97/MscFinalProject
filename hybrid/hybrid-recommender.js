@@ -48,6 +48,11 @@
  *       - for a goodbooks user in dataset_ratings (testing)
  *
  * Every result says WHY it was recommended (`reason`) - useful for the UI.
+ *
+ * Library availability (only if the user asks - option `nearby`, see
+ * library/availability.js): the hybrid builds a larger pool (up to 100), then
+ * keeps / moves up the books on the shelf in nearby branches. Without
+ * `nearby` nothing changes.
  */
 
 const path = require("path");
@@ -55,6 +60,7 @@ const { Pool } = require("pg");
 require("dotenv").config();
 const { GENRES, expandGenres, genreCondition } = require(path.join(__dirname, "..", "onboarding", "genres"));
 const { foldInUser, toVectorLiteral } = require(path.join(__dirname, "..", "CF", "als"));
+const { applyNearby } = require(path.join(__dirname, "..", "library", "availability"));
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -70,7 +76,8 @@ const GENRES_INFERRED = 3;      // genres taken from the user's books when he di
 const OUTSIDE_GENRE = 0.01;     // tiny popularity for books outside his genres - only breaks ties
 const CANDIDATES = 300;         // candidates fetched from each source before mixing
 const POP_PER_AUTHOR = 2;
-const NEW_BOOK_MAX_RATINGS = 5; // a book with fewer ratings is "new": only CBF judges it (as in the proposal)       // max books per author among POPULARITY picks (CF picks unlimited)
+const NEW_BOOK_MAX_RATINGS = 5; // a book with fewer ratings is "new": only CBF judges it (as in the proposal)
+const NEARBY_POOL = 100;        // with `nearby`: candidates ranked before filtering by library availability
 
 // The ALS model (settings + Y^T Y) - read once; null if CF/train-als.js was not run
 let alsPromise = null;
@@ -157,8 +164,9 @@ async function inferGenres(bookIds, stars) {
 /**
  * @param {{bookId:number, rating:number}[]} ratings  the user's ratings (1-5)
  * @param {number} [count=10]
- * @param {{genres?:string[], slots?:number, beta?:number}} [options]
+ * @param {{genres?:string[], slots?:number, beta?:number, nearby?:object}} [options]
  *        genres: keys from onboarding/genres.js (the questionnaire answer)
+ *        nearby: library availability - only when the user asks (library/availability.js)
  */
 async function getHybridRecommendations(ratings, count = 10, options = {}) {
   const beta = options.beta ?? BETA;
@@ -176,6 +184,10 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
     count,
     options.slots ?? Math.max(NEW_BOOK_SLOTS, genres.length ? Math.round((count * googleOnly) / genres.length) : 0)
   );
+  // With `nearby`: rank a larger pool, then filter / boost by availability.
+  // Without it: poolCount = count, newLimit = slots - exactly as before.
+  const poolCount = options.nearby ? Math.max(count, Math.min(count * 10, NEARBY_POOL)) : count;
+  const newLimit = options.nearby ? slots * 5 : slots;
 
   // CF weight counts only the user's books that CF knows (books with ratings)
   const { rows: known } = await pool.query(
@@ -270,7 +282,7 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
             AND count(*) >= CASE WHEN nb.categories && $6::text[] THEN 1 ELSE $5 END
          ORDER BY score DESC
          LIMIT $4;`,
-        [bookIds, stars, mean, slots * 4, Math.min(NEW_BOOK_MIN_SUPPORT, n), options.genres?.length ? google : [],
+        [bookIds, stars, mean, newLimit * 4, Math.min(NEW_BOOK_MIN_SUPPORT, n), options.genres?.length ? google : [],
          NEW_BOOK_MAX_RATINGS]
       )).rows
     : [];
@@ -313,39 +325,47 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
       });
     }
   };
-  pickRated(count - Math.min(slots, newCands.length));
+  pickRated(poolCount - Math.min(newLimit, newCands.length));
   let newPicked = 0;
   for (const r of newCands) {
-    if (newPicked >= slots || picked.length >= count) break;
+    if (newPicked >= newLimit || picked.length >= poolCount) break;
     const t = titleOf.get(r.id);
     if (t && seenTitles.has(t)) continue;
     if (t) seenTitles.add(t);
     picked.push({
-      id: r.id, score: Number(r.score), cf: 0, popularity: 0,
+      id: r.id, score: Number(r.score), cf: 0, popularity: 0, isNew: true,
       reason: "Similar in content to books you liked - new, no ratings yet (CBF)",
     });
     newPicked++;
   }
   // Too few new books after removing editions -> fill with more rated books,
   // keeping the new books at the end
-  if (picked.length < count) {
+  if (picked.length < poolCount) {
     const newOnes = picked.splice(picked.length - newPicked, newPicked);
-    pickRated(count - newOnes.length);
+    pickRated(poolCount - newOnes.length);
     picked.push(...newOnes);
+  }
+
+  // Library availability - only if the user asked (post-processing, after the model)
+  let final = picked;
+  let nearby;
+  if (options.nearby) {
+    ({ recommendations: final, nearby } = await applyNearby(pool, picked, options.nearby, count, slots));
   }
 
   // Book details, in the same order
   const { rows: details } = await pool.query(
     `SELECT id, title, authors, categories, goodbooks_id, thumbnail_url
      FROM books WHERE id = ANY($1::int[]);`,
-    [picked.map((p) => p.id)]
+    [final.map((p) => p.id)]
   );
   const byId = new Map(details.map((d) => [d.id, d]));
   return {
     cfWeight: w,
     cfModel: !n ? "none - no ratings" : alsModel ? "ALS" : "item-item",
     genres,
-    recommendations: picked.map((p) => ({ ...byId.get(p.id), ...p })),
+    ...(nearby ? { nearby } : {}),
+    recommendations: final.map((p) => ({ ...byId.get(p.id), ...p })),
   };
 }
 
