@@ -21,6 +21,19 @@
  *        the book has them (10K books: specific - fantasy, mystery...),
  *        otherwise `categories` (Google books). Hyphens become spaces
  *        ("young-adult" -> "young adult").
+ *        RESULT (compare-embeddings.js, 50 books, 22/10/2026): no difference
+ *        from v1 on the book page (readers agree 25.6% vs 26.0%) - v1 kept.
+ *   v4 - title + CLEANED description (CBF/clean-description.js): marketing
+ *        sentences and phrases ("new foiled edition", "#1 New York Times
+ *        bestselling author"), review quotes and repeated sentences removed.
+ *        Only ONE thing changes from v1 - the cleaning - so the comparison
+ *        tells whether the cleaning helps.
+ *        RESULT (100 books, 22/10/2026): no difference (26.5% vs 27.3%) - v1 kept.
+ *
+ * Another MODEL (--model): the text stays v1, only the model changes.
+ *   minilm  Xenova/all-MiniLM-L6-v2   384 numbers, reads ~256 tokens   (the app until 22/10/2026)
+ *   mpnet   Xenova/all-mpnet-base-v2  768 numbers, reads ~384 tokens   (default now: +5.4 points
+ *           "readers agree@10 without the series", compare-embeddings.js, 200 books)
  *
  * Safe testing: v2/v3 is written to a NEW column (embedding_v2), so the current
  * `embedding` column - which the app and content_similarity use - is not
@@ -34,12 +47,16 @@
  *   node CBF/embed-books.js                                   new books, v1, into `embedding`
  *   node CBF/embed-books.js --column embedding_v2 --text v2   test version with genres
  *   node CBF/embed-books.js --column embedding_v3 --text v3   test version with 10K genres
+ *   node CBF/embed-books.js --column embedding_v4 --text v4   test version with cleaned descriptions
+ *   node CBF/embed-books.js --column embedding_mpnet --model mpnet   test a bigger model (text v1)
  *   node CBF/embed-books.js --column embedding_v2 --text v2 --preview 5
  *                                       only print the text of 5 books, nothing saved
  */
 
+const path = require("path");
 const { Pool } = require("pg");
 require("dotenv").config();
+const { cleanDescription } = require(path.join(__dirname, "clean-description"));
 
 const BATCH_SIZE = 50;
 const DEFAULT_TEXT = "v1"; // after switching to v2, change this to "v2" so new books match
@@ -51,13 +68,23 @@ function strArg(name, def) {
 const COLUMN = strArg("--column", "embedding");
 const TEXT_VERSION = strArg("--text", DEFAULT_TEXT);
 const PREVIEW = Number(strArg("--preview", 0));
+const MODELS = {
+  minilm: { name: "Xenova/all-MiniLM-L6-v2", dim: 384 },
+  mpnet: { name: "Xenova/all-mpnet-base-v2", dim: 768 },
+};
+// mpnet since 22/10/2026 (db/switch-embedding.js) - `embedding` holds mpnet vectors
+const MODEL = MODELS[strArg("--model", "mpnet")];
+if (!MODEL) {
+  console.error(`--model must be ${Object.keys(MODELS).join(" or ")}`);
+  process.exit(1);
+}
 
 if (!/^[a-z_][a-z0-9_]*$/.test(COLUMN)) {
   console.error(`Bad column name: ${COLUMN}`);
   process.exit(1);
 }
-if (!["v1", "v2", "v3"].includes(TEXT_VERSION)) {
-  console.error(`--text must be v1, v2 or v3`);
+if (!["v1", "v2", "v3", "v4"].includes(TEXT_VERSION)) {
+  console.error(`--text must be v1, v2, v3 or v4`);
   process.exit(1);
 }
 
@@ -68,7 +95,15 @@ const pool = new Pool({
 
 async function ensureVectorSetup() {
   await pool.query(`CREATE EXTENSION IF NOT EXISTS vector;`);
-  await pool.query(`ALTER TABLE books ADD COLUMN IF NOT EXISTS ${COLUMN} vector(384);`);
+  await pool.query(`ALTER TABLE books ADD COLUMN IF NOT EXISTS ${COLUMN} vector(${MODEL.dim});`);
+  // a column made earlier with another model has another size - stop instead of failing later
+  const { rows } = await pool.query(
+    `SELECT atttypmod AS dim FROM pg_attribute WHERE attrelid = 'books'::regclass AND attname = $1;`,
+    [COLUMN]
+  );
+  if (rows[0] && rows[0].dim !== MODEL.dim) {
+    throw new Error(`Column ${COLUMN} holds ${rows[0].dim} numbers, but ${MODEL.name} gives ${MODEL.dim}. Use another --column.`);
+  }
 }
 
 async function getBooksNeedingEmbedding(limit) {
@@ -103,6 +138,10 @@ function genresOf(book) {
 }
 
 function buildText(book) {
+  if (TEXT_VERSION === "v4") {
+    const clean = cleanDescription(book.description).text.slice(0, 1000);
+    return clean ? book.title + ". " + clean : book.title;
+  }
   const desc = book.description ? book.description.slice(0, 1000) : "";
   if (TEXT_VERSION === "v1") return desc ? book.title + ". " + desc : book.title;
 
@@ -132,7 +171,7 @@ async function main() {
     console.error("Missing DATABASE_URL in .env file");
     process.exit(1);
   }
-  console.log(`Column: ${COLUMN}, text version: ${TEXT_VERSION}`);
+  console.log(`Column: ${COLUMN}, text version: ${TEXT_VERSION}, model: ${MODEL.name}`);
 
   if (PREVIEW) {
     // Show the exact text that would be embedded - nothing is saved
@@ -145,13 +184,20 @@ async function main() {
       [PREVIEW]
     );
     for (const b of rows) console.log(`\n[${b.id}] ${buildText(b).slice(0, 300)}...`);
+    // How many descriptions would the cleaning change? (v4) - reads descriptions only
+    if (TEXT_VERSION === "v4") {
+      const { rows: all } = await pool.query(`SELECT goodbooks_id IS NOT NULL AS gb, description FROM books WHERE description IS NOT NULL;`);
+      const changed = { true: 0, false: 0 }, total = { true: 0, false: 0 };
+      for (const r of all) { total[r.gb]++; if (cleanDescription(r.description).removed.length) changed[r.gb]++; }
+      console.log(`\nWould change: goodbooks ${changed.true}/${total.true}, Google ${changed.false}/${total.false}`);
+    }
     await pool.end();
     return;
   }
 
   console.log("Loading embeddings model (first run downloads it - may take a while)...");
   const { pipeline } = await import("@xenova/transformers");
-  const extractor = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
+  const extractor = await pipeline("feature-extraction", MODEL.name);
 
   await ensureVectorSetup();
   const { rows: todo } = await pool.query(`SELECT count(*)::int AS n FROM books WHERE ${COLUMN} IS NULL;`);

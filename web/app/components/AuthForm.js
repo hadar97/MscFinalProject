@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import Leaf from "@/components/Leaf";
+import SessionEndedNotice from "./SessionEndedNotice";
 
 export default function AuthForm({ title, subtitle, action, withName, submitLabel, altText, altHref, altLabel }) {
   const [state, formAction, pending] = useActionState(action, null);
@@ -25,6 +26,7 @@ export default function AuthForm({ title, subtitle, action, withName, submitLabe
             <h1 className="m-0 font-serif text-[44px] font-semibold">{title}</h1>
             <p className="m-0 text-ink-soft">{subtitle} <Link href={altHref}>{altLabel}</Link></p>
           </div>
+          <SessionEndedNotice />
           {withName && (
             <label className="flex flex-col gap-1.5 text-sm font-medium">Name
               <input name="name" required autoComplete="name" className="field font-normal" />

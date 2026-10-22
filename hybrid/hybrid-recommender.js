@@ -49,6 +49,12 @@
  *
  * Every result says WHY it was recommended (`reason`) - useful for the UI.
  *
+ * Diversity (option `diversify`, the server turns it on for the app):
+ * ONE book per series - the next one the user has not rated, with "+N more in
+ * this series" - and at most 2 books per author among ALL picks (see
+ * hybrid/diversity.js). Off by default, so evaluate.js measures the model
+ * exactly as before; with it on the list changes, the scores do not.
+ *
  * Library availability (only if the user asks - option `nearby`, see
  * library/availability.js): the hybrid builds a larger pool (up to 100), then
  * keeps / moves up the books on the shelf in nearby branches. Without
@@ -61,6 +67,7 @@ require("dotenv").config();
 const { GENRES, expandGenres, genreCondition } = require(path.join(__dirname, "..", "onboarding", "genres"));
 const { foldInUser, toVectorLiteral } = require(path.join(__dirname, "..", "CF", "als"));
 const { applyNearby } = require(path.join(__dirname, "..", "library", "availability"));
+const { loadSeries, seriesRepresentative, titleKey } = require(path.join(__dirname, "diversity"));
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -164,8 +171,11 @@ async function inferGenres(bookIds, stars) {
 /**
  * @param {{bookId:number, rating:number}[]} ratings  the user's ratings (1-5)
  * @param {number} [count=10]
- * @param {{genres?:string[], slots?:number, beta?:number, nearby?:object}} [options]
+ * @param {{genres?:string[], slots?:number, beta?:number, nearby?:object, diversify?:boolean}} [options]
  *        genres: keys from onboarding/genres.js (the questionnaire answer)
+ *        diversify: one book per series + 2 per author on all picks (hybrid/diversity.js)
+ *        exclude: book ids already shown ("Recommend more" in the app) - never
+ *                 returned again, and their series count as already shown
  *        nearby: library availability - only when the user asks (library/availability.js)
  */
 async function getHybridRecommendations(ratings, count = 10, options = {}) {
@@ -173,6 +183,7 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
   const bookIds = ratings.map((r) => Number(r.bookId));
   const stars = ratings.map((r) => Number(r.rating));
   const n = ratings.length;
+  const excluded = new Set((options.exclude || []).map(Number).filter(Number.isInteger));
 
   // The user's genres: from the questionnaire, or inferred from his books
   const genres = options.genres?.length ? [...new Set(options.genres)] : await inferGenres(bookIds, stars);
@@ -258,6 +269,7 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
       const p = popNorm.get(id) || 0;
       return { id, score: w * c + (1 - w) * p, cf: c, popularity: p };
     })
+    .filter((r) => !excluded.has(r.id))
     .sort((a, b) => b.score - a.score);
 
   // 2. Books without ratings: best by CBF (content neighbours of the user's books)
@@ -282,41 +294,65 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
             AND count(*) >= CASE WHEN nb.categories && $6::text[] THEN 1 ELSE $5 END
          ORDER BY score DESC
          LIMIT $4;`,
-        [bookIds, stars, mean, newLimit * 4, Math.min(NEW_BOOK_MIN_SUPPORT, n), options.genres?.length ? google : [],
+        [bookIds, stars, mean, newLimit * 4 + excluded.size, Math.min(NEW_BOOK_MIN_SUPPORT, n), options.genres?.length ? google : [],
          NEW_BOOK_MAX_RATINGS]
-      )).rows
+      )).rows.filter((r) => !excluded.has(r.id))
     : [];
+
+  // Series of the candidates (only with `diversify`): all books of each series,
+  // so a series can be shown by its NEXT unread book, not the one CF ranked
+  const diversify = Boolean(options.diversify);
+  const topIds = rated.slice(0, CANDIDATES).map((r) => r.id);
+  const series = diversify ? await loadSeries(pool, [...topIds, ...excluded], NEW_BOOK_MAX_RATINGS) : { seriesOf: new Map(), members: new Map() };
+  const seriesBookIds = [...series.seriesOf.keys()];
 
   // Authors and titles of the candidates and of the user's own books
   const { rows: auth } = await pool.query(
     `SELECT id, lower(authors[1]) AS author, title FROM books WHERE id = ANY($1::int[]);`,
-    [[...rated.slice(0, CANDIDATES).map((r) => r.id), ...newCands.map((r) => r.id), ...bookIds]]
+    [[...topIds, ...newCands.map((r) => r.id), ...bookIds, ...seriesBookIds, ...excluded]]
   );
   const authorOf = new Map(auth.map((r) => [r.id, r.author]));
   // Same title = same book (another edition, e.g. a Google copy of a 10K book)
-  const titleKey = (t) => String(t || "").toLowerCase().replace(/\(.*?\)/g, "").replace(/[^\p{L}\p{N}]/gu, "");
   const titleOf = new Map(auth.map((r) => [r.id, titleKey(r.title)]));
-  const seenTitles = new Set(bookIds.map((id) => titleOf.get(id)).filter(Boolean));
+  const seenTitles = new Set([...bookIds, ...excluded].map((id) => titleOf.get(id)).filter(Boolean));
 
   // Combine: (count - new books) rated books + the new books.
   // At most POP_PER_AUTHOR books per author among the books that are here
   // because of POPULARITY (no "6 Harry Potters"). A book CF chose - readers
   // like you liked it, e.g. the next book in a series - is never removed.
+  // With `diversify`: the limit covers ALL books, and one book per series.
   const picked = [];
   const perAuthor = new Map();
+  const myBooks = new Set(bookIds);
+  // series already shown on an earlier page ("Recommend more")
+  const shownSeries = new Set([...excluded].map((id) => series.seriesOf.get(id)).filter(Boolean));
   let next = 0; // position in `rated`
   const pickRated = (limit) => {
     while (picked.length < limit && next < rated.length) {
       const r = rated[next++];
-      const t = titleOf.get(r.id);
+      let id = r.id;
+      let seriesInfo;
+      const sName = series.seriesOf.get(r.id);
+      if (sName) {
+        if (shownSeries.has(sName)) continue; // this series is already in the list
+        shownSeries.add(sName);
+        const rep = seriesRepresentative(series.members.get(sName), (bid) =>
+          !myBooks.has(bid) && !excluded.has(bid) && !(titleOf.get(bid) && seenTitles.has(titleOf.get(bid))));
+        if (!rep) continue; // the user has read the whole series
+        id = rep.id;
+        seriesInfo = { name: sName, number: rep.number, more: rep.more };
+      }
+      const t = titleOf.get(id);
       if (t && seenTitles.has(t)) continue; // another edition of a book already here / rated
       const byCf = r.cf > 0 && w * r.cf >= (1 - w) * r.popularity;
-      const a = authorOf.get(r.id);
-      if (!byCf && a && (perAuthor.get(a) || 0) >= POP_PER_AUTHOR) continue;
+      const a = authorOf.get(id);
+      if ((diversify || !byCf) && a && (perAuthor.get(a) || 0) >= POP_PER_AUTHOR) continue;
       if (a) perAuthor.set(a, (perAuthor.get(a) || 0) + 1);
       if (t) seenTitles.add(t);
       picked.push({
         ...r,
+        id,
+        ...(seriesInfo ? { series: seriesInfo, rankedId: r.id } : {}),
         reason: byCf
           ? "Readers with similar taste liked it (CF)"
           : inGenre.has(r.id)

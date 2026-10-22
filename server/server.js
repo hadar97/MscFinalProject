@@ -1,5 +1,5 @@
 /**
- * RecoRead recommendation API - the one file the website talks to.
+ * BookBridge recommendation API - the one file the website talks to.
  *
  * The website (React / Next.js) calls these addresses; this server calls the
  * recommendation code we built and measured (onboarding, hybrid, CBF).
@@ -10,7 +10,8 @@
  *   POST /api/recommendations             { answers | ratings, genres, count } -> 10 books
  *   GET  /api/books/search?q=harry        search books by title (for search boxes)
  *   GET  /api/books/:id                   one book's details
- *   GET  /api/books/:id/similar           "similar books" for a book page (CBF)
+ *   GET  /api/books/:id/similar           "similar books" for a book page (CBF), ?count=6&offset=0 (up to 30)
+ *   GET  /api/series?name=Harry%20Potter  all books of a series, in order (+ box sets)
  *   GET  /api/libraries?city=Jerusalem    library branches (for a map / a "choose library" list)
  *   GET  /api/books/:id/availability      where a book is on the shelf (?lat=&lng=&radiusKm= | ?city=)
  *
@@ -47,10 +48,12 @@ const { QUESTIONNAIRE } = require(path.join(root, "onboarding", "questionnaire")
 const { GENRES } = require(path.join(root, "onboarding", "genres"));
 const cbf = require(path.join(root, "CBF", "Recommender"));
 const { parseNearby, getAvailability, NearbyError } = require(path.join(root, "library", "availability"));
+const { loadSeries, diversify, hasSeriesColumns } = require(path.join(root, "hybrid", "diversity"));
 
 const db = hybrid.pool; // reuse the hybrid's connection pool for simple reads
 const PORT = Number(process.env.PORT) || 3001;
 const GENRE_KEYS = new Set(GENRES.map((g) => g.key));
+const SIMILAR_MAX = 30; // "Similar in spirit": 6 at a time, up to 30
 
 const app = express();
 app.use(cors());                          // the website runs on another port in development
@@ -138,7 +141,8 @@ async function recommend(req, res) {
   // Library availability only if asked; checked here so bad input is a 400
   const nearby = req.body.nearby ? req.body.nearby : undefined;
   if (nearby) parseNearby(nearby);
-  const result = await hybrid.getHybridRecommendations(ratings, count, { genres, nearby });
+  // diversify: one book per series + at most 2 per author (hybrid/diversity.js)
+  const result = await hybrid.getHybridRecommendations(ratings, count, { genres, nearby, diversify: true });
   res.json({ ...result, recommendations: result.recommendations.map(withTexts) });
 }
 app.post("/api/recommendations", wrap(recommend));
@@ -169,13 +173,40 @@ app.get("/api/books/:id", wrap(async (req, res) => {
     [id]
   );
   if (!rows[0]) return res.status(404).json({ error: "book not found" });
-  res.json(rows[0]);
+  // the book's series, for a "Book 3 of Harry Potter" link (db/add-series.js)
+  let series = null;
+  if (await hasSeriesColumns(db)) {
+    const { rows: s } = await db.query(
+      `SELECT series_name AS name, series_number::float8 AS number,
+              (SELECT count(*)::int FROM books o WHERE o.series_name = b.series_name AND o.series_number IS NOT NULL) AS total
+       FROM books b WHERE id = $1 AND series_name IS NOT NULL;`,
+      [id]
+    );
+    series = s[0] || null;
+  }
+  res.json({ ...rows[0], series });
 }));
 
 app.get("/api/books/:id/similar", wrap(async (req, res) => {
   const id = checkId(req.params.id);
+  // ?count=6&offset=6 -> books 7-12 ("Show more", up to SIMILAR_MAX in all).
+  // The full list is built the same way every time (from a fixed pool), so
+  // the pages never repeat or reshuffle a book.
   const count = Math.min(Math.max(Number(req.query.count) || 6, 1), 20);
-  const books = await cbf.getSimilarBooks(id, count);
+  const offset = Math.min(Math.max(Number(req.query.offset) || 0, 0), SIMILAR_MAX);
+  // Ask CBF for more, then keep a varied list: one book per series, at most
+  // 2 per author, no other edition of this same book (hybrid/diversity.js)
+  const raw = await cbf.getSimilarBooks(id, SIMILAR_MAX * 4);
+  const { rows: base } = await db.query(`SELECT title, authors FROM books WHERE id = $1;`, [id]);
+  const { seriesOf } = await loadSeries(db, [id, ...raw.map((b) => b.id)]);
+  // Books ABOUT this book are not "similar in spirit": guides, parodies, movie
+  // companions - a title with the series name (or this title) by another author
+  const about = (seriesOf.get(id) || base[0]?.title || "").toLowerCase().replace(/\s*[:(].*$/, "").replace(/^(the|a|an)\s+/, "").trim();
+  const myAuthor = (base[0]?.authors?.[0] || "").toLowerCase();
+  const notAbout = raw.filter((b) => !(about.length >= 5 && (b.authors?.[0] || "").toLowerCase() !== myAuthor
+    && String(b.title || "").toLowerCase().includes(about)));
+  const all = diversify(notAbout, { seriesOf, skipTitles: base.map((b) => b.title), count: SIMILAR_MAX });
+  const books = all.slice(offset, offset + count);
   // covers for the website (CBF returns the book data without them)
   const { rows: covers } = await db.query(
     `SELECT id, thumbnail_url FROM books WHERE id = ANY($1::int[]);`,
@@ -186,7 +217,34 @@ app.get("/api/books/:id/similar", wrap(async (req, res) => {
     books: books.map(({ id: bid, title, authors, goodbooks_id, score }) => ({
       id: bid, title, authors, goodbooks_id, score, thumbnail_url: coverOf.get(bid) || null,
     })),
+    hasMore: offset + count < all.length,
   });
+}));
+
+// All books of one series: numbered books in order, then box sets / omnibus
+// editions ("#1-7", no single number). Same edition twice (same number) -> the
+// one with more ratings.
+app.get("/api/series", wrap(async (req, res) => {
+  const name = String(req.query.name || "").trim();
+  if (!name || name.length > 200) throw new BadRequest("series name is required");
+  if (!(await hasSeriesColumns(db))) return res.status(404).json({ error: "series are not loaded (db/add-series.js)" });
+  const { rows } = await db.query(
+    `SELECT b.id, b.title, b.authors, b.thumbnail_url, b.published_date, b.goodbooks_id,
+            b.series_number::float8 AS number, coalesce(p.ratings_count, 0) AS ratings_count
+     FROM books b LEFT JOIN book_popularity p ON p.book_id = b.id
+     WHERE b.series_name = $1
+     ORDER BY b.series_number NULLS LAST, p.ratings_count DESC NULLS LAST, b.id;`,
+    [name]
+  );
+  if (!rows.length) return res.status(404).json({ error: "series not found" });
+  const seen = new Set();
+  const books = [];
+  const collections = [];
+  for (const r of rows) {
+    if (r.number === null) collections.push(r);
+    else if (!seen.has(r.number)) { seen.add(r.number); books.push(r); }
+  }
+  res.json({ name, author: rows[0].authors?.[0] || null, books, collections });
 }));
 
 app.get("/api/libraries", wrap(async (req, res) => {
@@ -231,5 +289,5 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
 });
 
 app.listen(PORT, () => {
-  console.log(`RecoRead API on http://localhost:${PORT}  (try /api/health)`);
+  console.log(`BookBridge API on http://localhost:${PORT}  (try /api/health)`);
 });

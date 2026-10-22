@@ -1,13 +1,23 @@
 "use client";
 
-// The main page: 10 picks from the hybrid model, with the optional library filter
-import { useCallback, useEffect, useState } from "react";
+// The main page: 10 picks from the hybrid model, with the optional library filter.
+// "Recommend me more" adds 10 new picks at a time, up to MAX_BOOKS in all
+// (the server is told which books are already on the page).
+// Rating a book or "Not for me" removes its card, says so in a small message,
+// and puts a NEW pick in its place - asked from the server AFTER the rating
+// was saved, so the new pick already uses it.
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import RecCard from "@/components/RecCard";
+import BookshelfLoader from "@/components/BookshelfLoader";
+import Toast, { useToast } from "@/components/Toast";
+import { scrollIntoViewSoon } from "@/lib/scroll";
 import { api } from "@/lib/api";
 
 const CITIES = ["Jerusalem", "Tel Aviv-Yafo"];
+const PAGE = 10;
+const MAX_BOOKS = 50;
 
 export default function ForYouPage() {
   const [me, setMe] = useState(null);
@@ -18,6 +28,12 @@ export default function ForYouPage() {
   const [mode, setMode] = useState("filter");
   const [coords, setCoords] = useState(null);
   const [hidden, setHidden] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [noMore, setNoMore] = useState(false);
+  const [toast, showToast] = useToast();
+  const seen = useRef(new Set()); // every book shown on this page - never asked for again
+  const moreRef = useRef(null);
 
   useEffect(() => {
     api("/api/me").then((m) => {
@@ -26,20 +42,67 @@ export default function ForYouPage() {
     }).catch((e) => setError(e.message));
   }, []);
 
-  const load = useCallback(async () => {
-    const q = new URLSearchParams({ count: "10" });
+  // the address for one page of picks (null while waiting for my location)
+  const query = useCallback((exclude = []) => {
+    const q = new URLSearchParams({ count: String(PAGE) });
+    if (exclude.length) q.set("exclude", exclude.join(","));
     if (near) {
       if (where === "here") {
-        if (!coords) return;
+        if (!coords) return null;
         q.set("lat", coords.lat); q.set("lng", coords.lng); q.set("radiusKm", "10");
       } else q.set("city", where);
       q.set("mode", mode);
     }
-    try { const r = await api(`/api/me/recommendations?${q}`); setError(null); setData(r); setHidden([]); }
-    catch (e) { setError(e.message); }
+    return `/api/me/recommendations?${q}`;
   }, [near, where, mode, coords]);
 
-  useEffect(() => { if (me?.onboarded) load(); }, [me, load]);
+  const load = useCallback(async () => {
+    const url = query();
+    if (!url) return;
+    setLoading(true);
+    try {
+      const r = await api(url);
+      seen.current = new Set(r.recommendations.map((b) => b.id));
+      setError(null); setData(r); setHidden([]); setNoMore(r.recommendations.length < PAGE);
+    }
+    catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  }, [query]);
+
+  async function loadMore() {
+    const url = query([...seen.current]);
+    if (!url) return;
+    setLoadingMore(true);
+    scrollIntoViewSoon(moreRef); // show the loader, then the new books appear right there
+    try {
+      const r = await api(url);
+      r.recommendations.forEach((b) => seen.current.add(b.id));
+      setData((d) => ({ ...d, recommendations: [...d.recommendations, ...r.recommendations] }));
+      if (r.recommendations.length < PAGE) setNoMore(true);
+    } catch (e) { setError(e.message); }
+    finally { setLoadingMore(false); }
+  }
+
+  useEffect(() => { if (me?.onboarded) load(); }, [me, load]); // eslint-disable-line react-hooks/set-state-in-effect
+
+  // A card was rated / dismissed: hide it now, then fill its place with a new pick
+  async function replaceCard(id, message) {
+    setHidden((h) => [...h, id]);
+    showToast(`${message} Finding a new pick for you…`);
+    const url = query([...seen.current]);
+    if (!url) return;
+    try {
+      const r = await api(url);
+      const fresh = r.recommendations.find((b) => !seen.current.has(b.id));
+      if (!fresh) return showToast(message);
+      seen.current.add(fresh.id);
+      setData((d) => ({ ...d, recommendations: d.recommendations.map((b) => (b.id === id ? { ...fresh, fresh: true } : b)) }));
+      setHidden((h) => h.filter((x) => x !== id));
+      showToast(`${message} “${fresh.title}” took its place.`);
+    } catch {
+      showToast(message);
+    }
+  }
 
   function pickMyLocation() {
     setWhere("here");
@@ -51,6 +114,8 @@ export default function ForYouPage() {
   }
 
   const books = (data?.recommendations || []).filter((b) => !hidden.includes(b.id));
+  const total = data?.recommendations.length || 0;
+  const canLoadMore = data && !loading && !noMore && total < MAX_BOOKS;
 
   return (
     <AppShell>
@@ -60,7 +125,7 @@ export default function ForYouPage() {
           <h1 className="m-0 font-serif text-5xl font-semibold leading-tight md:text-[54px]">Ten books for a slow autumn evening</h1>
           {me && (
             <p className="m-0 text-ink-soft">
-              Based on {me.ratingsCount} book{me.ratingsCount === 1 ? "" : "s"} you rated{me.genres.length ? ` and your genres` : ""}. <Link href="/onboarding/genres">Rate more</Link> to sharpen them.
+              Based on {me.ratingsCount} book{me.ratingsCount === 1 ? "" : "s"} you rated{me.genres.length ? ` and your genres` : ""}. <Link href="/rate-more">Rate more</Link> to sharpen them.
             </p>
           )}
         </div>
@@ -103,17 +168,31 @@ export default function ForYouPage() {
         )}
 
         {error && <p role="alert" className="text-rust-dark">{error}</p>}
-        {me?.onboarded && !data && !error && <p className="text-muted">Choosing your books…</p>}
-        {data && books.length === 0 && <p className="text-muted">No books match – try another city or “Available first”.</p>}
+        {me?.onboarded && (loading || (!data && !error)) && <BookshelfLoader label="Choosing your books…" />}
+        {data && !loading && books.length === 0 && <p className="text-muted">No books match – try another city or “Available first”.</p>}
 
-        <div className="grid gap-x-5 gap-y-7 [grid-template-columns:repeat(auto-fill,minmax(190px,1fr))]">
+        <div className={`grid gap-x-5 gap-y-7 [grid-template-columns:repeat(auto-fill,minmax(190px,1fr))] ${loading ? "hidden" : ""}`}>
           {books.map((b) => (
-            <RecCard key={b.id} book={b} showAvailability={near}
-              onDismiss={(id) => setHidden((h) => [...h, id])}
-              onRated={(id) => setHidden((h) => [...h, id])} />
+            <div key={b.id} className={b.fresh ? "fresh-in" : ""}>
+              <RecCard book={b} showAvailability={near}
+                onDismiss={(id) => replaceCard(id, "Hidden – we won't suggest it again.")}
+                onRated={(id, n) => replaceCard(id, `Rated ${n}★ – thanks!`)} />
+            </div>
           ))}
         </div>
+
+        <div ref={moreRef}>{loadingMore && <BookshelfLoader label="Finding 10 more…" />}</div>
+        {!loadingMore && canLoadMore && (
+          <div className="flex flex-col items-center gap-2 pt-4">
+            <button type="button" onClick={loadMore} className="btn btn-dark">Recommend me more</button>
+            <span className="text-sm text-muted">{total} of up to {MAX_BOOKS} picks</span>
+          </div>
+        )}
+        {data && !loading && !loadingMore && !canLoadMore && total > PAGE && (
+          <p className="pt-4 text-center text-sm text-muted">That&apos;s {total} picks – rate a few of them to get fresh ones.</p>
+        )}
       </div>
+      <Toast toast={toast} />
     </AppShell>
   );
 }

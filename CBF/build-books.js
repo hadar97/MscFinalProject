@@ -409,7 +409,7 @@ async function apply(plan) {
         search_term      TEXT,
         search_terms     TEXT[],
         created_at       TIMESTAMP DEFAULT NOW(),
-        embedding        vector(384),
+        embedding        vector(768),  -- mpnet (CBF/embed-books.js); was 384 = MiniLM
         goodbooks_id     INT UNIQUE,
         goodreads_genres TEXT[]
       );`);

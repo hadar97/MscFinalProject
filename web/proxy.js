@@ -12,6 +12,8 @@ export const config = {
     "/for-you/:path*",
     "/onboarding/:path*",
     "/books/:path*",
+    "/series/:path*",
+    "/rate-more/:path*",
     "/search/:path*",
     "/shelf/:path*",
     "/chat/:path*",

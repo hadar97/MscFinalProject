@@ -9,6 +9,11 @@
 // Auth for a new token on every call, several at once, could return
 // something that is not a JWT - the API then answered "invalid or expired
 // token".) If the API still answers 401, we get a fresh token and retry once.
+//
+// Session ended (no token can be had, or 401 again after the retry): the
+// login cookie may still be there - so pages still open - but it is no longer
+// valid. Then we sign out cleanly and go to the sign-in page, which says why,
+// instead of leaving the page stuck on "Not signed in".
 import { authClient } from "@/lib/auth/client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -50,12 +55,25 @@ export function clearToken() {
   cached = { token: null, exp: 0 };
 }
 
+let leaving = false;
+function sessionEnded() {
+  clearToken();
+  if (typeof window !== "undefined" && !leaving && !window.location.pathname.startsWith("/auth")) {
+    leaving = true;
+    try { sessionStorage.setItem("bb-session-ended", "1"); } catch {}
+    // a full page load on purpose: after signing out, nothing of the old session stays in memory
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    authClient.signOut().catch(() => {}).finally(() => window.location.assign("/auth/sign-in"));
+  }
+  return new Error("Your session ended – taking you to sign in…");
+}
+
 export async function api(path, { method = "GET", body, auth = true } = {}) {
   const send = async (force) => {
     const headers = { "Content-Type": "application/json" };
     if (auth) {
       const token = await getToken(force);
-      if (!token) throw new Error("Not signed in - please sign in again");
+      if (!token) throw sessionEnded();
       headers.Authorization = `Bearer ${token}`;
     }
     return fetch(`${API_URL}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
@@ -63,6 +81,7 @@ export async function api(path, { method = "GET", body, auth = true } = {}) {
 
   let res = await send(false);
   if (auth && res.status === 401) res = await send(true); // token expired meanwhile: once more, fresh
+  if (auth && res.status === 401) throw sessionEnded();
   const json = await res.json().catch(() => null);
   if (!res.ok) throw new Error(json?.error || `API error ${res.status}`);
   return json;

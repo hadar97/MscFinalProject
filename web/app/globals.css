@@ -41,3 +41,56 @@ a:hover { color: var(--color-rust-dark); }
 .card { background: var(--color-cream); border: 1px solid var(--color-line); border-radius: 1rem; }
 .field { font: inherit; width: 100%; padding: .8rem .9rem; border: 1px solid var(--color-line-strong); border-radius: .75rem; background: var(--color-cream); color: var(--color-ink); }
 .eyebrow { font-size: .8rem; letter-spacing: .15em; text-transform: uppercase; color: var(--color-rust); font-weight: 700; }
+
+/* Tooltip: <button data-tip="Save for later"> - on hover and keyboard focus.
+   The "/ ''" keeps screen readers from reading it twice (the button has aria-label). */
+[data-tip] { position: relative; }
+[data-tip]::after {
+  content: attr(data-tip); content: attr(data-tip) / "";
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translate(-50%, 4px);
+  white-space: nowrap; pointer-events: none; z-index: 20;
+  background: var(--color-ink); color: var(--color-parchment);
+  font-size: 12px; font-weight: 500; line-height: 1; padding: 7px 10px; border-radius: 8px;
+  opacity: 0; transition: opacity .15s ease, transform .15s ease;
+}
+[data-tip]:hover::after, [data-tip]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+
+/* Loading: books on a shelf topple over like dominoes, then stand up again */
+.shelf-loader { display: inline-flex; flex-direction: column; align-items: center; gap: 0; }
+.shelf-loader .books { display: flex; align-items: flex-end; gap: 3px; height: 64px; padding: 0 60px 0 6px; }
+.shelf-loader .book { width: var(--w); height: var(--h); background: var(--c); border-radius: 2px 2px 0 0;
+  box-shadow: inset -3px 0 0 rgba(0,0,0,.18), inset 0 6px 0 rgba(255,255,255,.08);
+  transform-origin: bottom right; animation: shelf-topple 2.8s cubic-bezier(.5,0,.3,1) infinite; animation-delay: calc(var(--i) * 0.11s); }
+.shelf-loader .book.last { animation-name: shelf-topple-last; }
+.shelf-loader .plank { width: 100%; min-width: 170px; height: 9px; border-radius: 3px; background: linear-gradient(#9A6A3A, #7A4F2A); box-shadow: 0 6px 10px rgba(43,33,28,.18); }
+.shelf-loader .label { margin-top: 16px; font-size: 15px; color: var(--color-muted); }
+@keyframes shelf-topple {
+  0%, 12% { transform: rotate(0deg); }
+  30%, 58% { transform: rotate(24deg); }   /* leaning on the next book */
+  78%, 100% { transform: rotate(0deg); }
+}
+@keyframes shelf-topple-last {
+  0%, 12% { transform: rotate(0deg); }
+  30%, 58% { transform: rotate(90deg); }   /* the last one falls flat on the shelf */
+  78%, 100% { transform: rotate(0deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shelf-loader .book { animation: shelf-pulse 1.6s ease-in-out infinite; animation-delay: calc(var(--i) * 0.15s); }
+  @keyframes shelf-pulse { 50% { opacity: .55; } }
+}
+
+/* Toast: in, stay, fade out (3.5s - the same as useToast) */
+.toast { animation: toast-life 3.5s ease forwards; }
+@keyframes toast-life {
+  0% { opacity: 0; transform: translateY(10px); }
+  8%, 80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(0); }
+}
+/* A card that just took another card's place */
+.fresh-in { animation: fresh-in .6s ease both; }
+@keyframes fresh-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: toast-fade 3.5s linear forwards; }
+  @keyframes toast-fade { 0%, 85% { opacity: 1; } 100% { opacity: 0; } }
+  .fresh-in { animation: none; }
+}

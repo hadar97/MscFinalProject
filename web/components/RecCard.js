@@ -19,7 +19,8 @@ export default function RecCard({ book, showAvailability, onDismiss, onRated }) 
   const [saved, setSaved] = useState(false);
   const [rating, setRating] = useState(false);
   const [busy, setBusy] = useState(false);
-  const author = (book.authors || []).join(", ");
+  const author = book.authors?.[0] || ""; // first author only (not illustrators / translators)
+  const series = book.series;
 
   async function save() {
     setBusy(true);
@@ -45,6 +46,12 @@ export default function RecCard({ book, showAvailability, onDismiss, onRated }) 
       <div className="flex flex-col gap-1">
         <Link href={`/books/${book.id}`} className="font-bold leading-snug text-ink no-underline hover:text-rust">{book.title}</Link>
         {author && <span className="text-[13px] text-muted">{author}</span>}
+        {series && (
+          <Link href={`/series/${encodeURIComponent(series.name)}`} className="text-[13px] italic text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-rust">
+            {series.name}, book {series.number}
+            {series.more > 0 && <> · +{series.more} more in this series</>}
+          </Link>
+        )}
       </div>
       <span className={`self-start rounded-full px-2.5 py-1 text-xs ${REASON_STYLE[reasonKind(book.reason)]}`}>{book.reasonText || book.reason}</span>
       {showAvailability && (
@@ -56,9 +63,9 @@ export default function RecCard({ book, showAvailability, onDismiss, onRated }) 
         <Stars value={0} onChange={rate} size={20} label={`Rate ${book.title}`} />
       ) : (
         <div className="flex gap-2">
-          <button type="button" disabled={busy} onClick={save} aria-pressed={saved} aria-label={saved ? "Remove from saved" : "Save for later"} className={`icon-btn ${saved ? "text-rust" : "text-ink"}`}><BookmarkIcon filled={saved} /></button>
-          <button type="button" disabled={busy} onClick={() => setRating(true)} aria-label="Rate this book" className="icon-btn text-ink"><StarIcon /></button>
-          <button type="button" onClick={dismiss} aria-label="Not for me" className="icon-btn text-ink"><XIcon /></button>
+          <button type="button" disabled={busy} onClick={save} aria-pressed={saved} aria-label={saved ? "Remove from saved" : "Save for later"} data-tip={saved ? "Remove from saved" : "Save for later"} className={`icon-btn ${saved ? "text-rust" : "text-ink"}`}><BookmarkIcon filled={saved} /></button>
+          <button type="button" disabled={busy} onClick={() => setRating(true)} aria-label="Rate this book" data-tip="I read it – rate it" className="icon-btn text-ink"><StarIcon /></button>
+          <button type="button" onClick={dismiss} aria-label="Not for me" data-tip="Not for me – hide it" className="icon-btn text-ink"><XIcon /></button>
         </div>
       )}
     </article>

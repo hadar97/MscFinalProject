@@ -48,24 +48,25 @@ function authorKey(book) {
   return (book.authors && book.authors[0] ? book.authors[0] : `?${book.id}`).toLowerCase().trim();
 }
 
-/** Most liked rated (10K) books of a genre */
-async function ratedBooksOfGenre(genreKey, limit) {
+/** Most liked rated (10K) books of a genre (not the books in `exclude`) */
+async function ratedBooksOfGenre(genreKey, limit, exclude = []) {
   const { goodreads, google } = expandGenres([genreKey]);
   const { rows } = await pool.query(
     `SELECT b.id, b.title, b.authors, b.thumbnail_url, b.goodbooks_id
      FROM books b
      JOIN book_popularity p ON p.book_id = b.id
      WHERE ${genreCondition("$1", "$2")}
+       AND b.id <> ALL($4::int[])
      ORDER BY (b.main_genres[1] = ANY($1::text[])) DESC,  -- the genre is the book's FIRST genre
               p.liked_count DESC                          -- then the most liked
      LIMIT $3;`,
-    [goodreads, google, limit]
+    [goodreads, google, limit, exclude]
   );
   return rows;
 }
 
 /** Google books of a genre: with Google ratings first, then the most typical ones */
-async function googleBooksOfGenre(genreKey, limit) {
+async function googleBooksOfGenre(genreKey, limit, exclude = []) {
   const { google } = expandGenres([genreKey]);
   if (!google.length) return [];
   const { rows } = await pool.query(
@@ -76,6 +77,7 @@ async function googleBooksOfGenre(genreKey, limit) {
          AND categories && $1::text[]
          AND embedding IS NOT NULL
          AND length(coalesce(description, '')) >= $2
+         AND id <> ALL($5::int[])
      ),
      c AS (SELECT avg(embedding) AS centroid FROM g)
      SELECT g.id, g.title, g.authors, g.thumbnail_url, g.goodbooks_id
@@ -83,7 +85,7 @@ async function googleBooksOfGenre(genreKey, limit) {
      ORDER BY (coalesce(g.ratings_count, 0) >= $3) DESC,   -- books Google readers rated first
               g.embedding <=> c.centroid                   -- then the most typical of the genre
      LIMIT $4;`,
-    [google, MIN_DESCRIPTION, MIN_GOOGLE_RATINGS, limit]
+    [google, MIN_DESCRIPTION, MIN_GOOGLE_RATINGS, limit, exclude]
   );
   return rows;
 }
@@ -92,9 +94,12 @@ async function googleBooksOfGenre(genreKey, limit) {
  * ~20 books for the questionnaire, an equal share from each chosen genre.
  * @param {string[]} genreKeys keys from genres.js, e.g. ["fantasy", "technology"]
  * @param {number} [total=20]
+ * @param {{exclude?: number[]}} [options]  exclude: book ids NOT to show - the
+ *        books the user already rated ("Rate more" in the app)
  * @returns {Promise<Array<{id, title, authors, thumbnail_url, goodbooks_id, genre}>>}
  */
-async function getOnboardingBooks(genreKeys, total = TOTAL_BOOKS) {
+async function getOnboardingBooks(genreKeys, total = TOTAL_BOOKS, { exclude = [] } = {}) {
+  exclude = exclude.map(Number).filter(Number.isInteger);
   const keys = [...new Set(genreKeys)];
   if (!keys.length) throw new Error("Choose at least one genre");
   expandGenres(keys); // throws on an unknown genre
@@ -126,8 +131,8 @@ async function getOnboardingBooks(genreKeys, total = TOTAL_BOOKS) {
   const candidates = [];
   for (let i = 0; i < keys.length; i++) {
     const n = Math.max(quota[i], 1) * 6;
-    const rated = await ratedBooksOfGenre(keys[i], n);
-    const google = rated.length < n ? await googleBooksOfGenre(keys[i], n) : [];
+    const rated = await ratedBooksOfGenre(keys[i], n, exclude);
+    const google = rated.length < n ? await googleBooksOfGenre(keys[i], n, exclude) : [];
     candidates.push([...rated, ...google]);
   }
   // 1st pass: each genre up to its share

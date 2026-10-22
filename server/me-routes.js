@@ -10,16 +10,21 @@
  *   PUT    /api/me/genres                { genres: [...] }            (1-5 keys from genres.js)
  *   POST   /api/me/onboarding            { genres, answers }          saves the questionnaire + returns 10 recommendations
  *   GET    /api/me/ratings               the user's ratings (newest first)
+ *   POST   /api/me/rate-more             { skip: [ids] } -> ~20 books from the user's genres to rate,
+ *                                        without the books he already rated (and without `skip`)
  *   POST   /api/me/ratings               { bookId, rating } or { ratings: [{ bookId, rating }] }
  *   DELETE /api/me/ratings/:bookId
  *   POST   /api/me/events                { bookId, type }             saved | unsaved | started | finished | dismissed | clicked
  *   GET    /api/me/shelf                 { saved: [...], finished: [...] }  (from the events)
- *   GET    /api/me/recommendations       ?count=10 [&city=Jerusalem | &lat=&lng=&radiusKm=] [&mode=filter|boost]
+ *   GET    /api/me/recommendations       ?count=10 [&exclude=1,2,3] [&city=Jerusalem | &lat=&lng=&radiusKm=] [&mode=filter|boost]
+ *                                        exclude = books already shown ("Recommend more") - 10 NEW ones
  *
  * Events are only STORED for now (decided 21/10/2026); the model uses ratings.
  */
 
 const express = require("express");
+const path = require("path");
+const { getOnboardingBooks } = require(path.join(__dirname, "..", "onboarding", "onboarding"));
 
 const EVENT_TYPES = new Set(["saved", "unsaved", "started", "finished", "dismissed", "clicked"]);
 const CITIES = new Set(["Jerusalem", "Tel Aviv-Yafo"]);
@@ -58,15 +63,18 @@ module.exports = function meRoutes({ db, hybrid, requireUser, h }) {
     }
   }
 
-  async function recommendFor(userId, count, nearby) {
-    const [{ rows: ratings }, { rows: genres }] = await Promise.all([
+  async function recommendFor(userId, count, nearby, exclude = []) {
+    const [{ rows: ratings }, { rows: genres }, { rows: dismissed }] = await Promise.all([
       db.query(`SELECT book_id, rating FROM user_ratings WHERE user_id = $1;`, [userId]),
       db.query(`SELECT genre_key FROM user_genres WHERE user_id = $1;`, [userId]),
+      // "Not for me" (✕) - never recommended again
+      db.query(`SELECT DISTINCT book_id FROM user_events WHERE user_id = $1 AND type = 'dismissed';`, [userId]),
     ]);
+    exclude = [...exclude, ...dismissed.map((d) => d.book_id)];
     const result = await hybrid.getHybridRecommendations(
       ratings.map((r) => ({ bookId: r.book_id, rating: r.rating })),
       count,
-      { genres: genres.map((g) => g.genre_key), nearby }
+      { genres: genres.map((g) => g.genre_key), nearby, diversify: true, exclude }
     );
     return { ...result, recommendations: result.recommendations.map(withTexts) };
   }
@@ -137,6 +145,21 @@ module.exports = function meRoutes({ db, hybrid, requireUser, h }) {
     res.json({ ratings: rows });
   }));
 
+  // "Rate more": the same choice as the questionnaire (onboarding.js - the
+  // most liked books of HIS genres, at most 2 per author), but never a book he
+  // already rated, and not the ones in `skip` (shown before, "haven't read").
+  router.post("/rate-more", wrap(async (req, res) => {
+    const skip = Array.isArray(req.body.skip) ? req.body.skip.slice(0, 1000).map(Number).filter(Number.isInteger) : [];
+    const [{ rows: genres }, { rows: rated }] = await Promise.all([
+      db.query(`SELECT genre_key FROM user_genres WHERE user_id = $1;`, [req.user.id]),
+      db.query(`SELECT book_id FROM user_ratings WHERE user_id = $1;`, [req.user.id]),
+    ]);
+    if (!genres.length) throw new BadRequest("choose your genres first");
+    const keys = genres.map((g) => g.genre_key);
+    const books = await getOnboardingBooks(keys, 20, { exclude: [...rated.map((r) => r.book_id), ...skip] });
+    res.json({ genres: keys, books });
+  }));
+
   router.post("/ratings", wrap(async (req, res) => {
     const list = req.body.ratings ?? [{ bookId: req.body.bookId, rating: req.body.rating }];
     if (!Array.isArray(list) || !list.length || list.length > 500) throw new BadRequest("send { bookId, rating } or { ratings: [...] } (up to 500)");
@@ -198,7 +221,9 @@ module.exports = function meRoutes({ db, hybrid, requireUser, h }) {
       nearby = { ...where, mode: req.query.mode };
       parseNearby(nearby); // 400 on bad input
     }
-    res.json(await recommendFor(req.user.id, count, nearby));
+    // "Recommend more": the ids already on the page (up to 50 books in all)
+    const exclude = String(req.query.exclude || "").split(",").filter(Boolean).slice(0, 100).map(Number).filter(Number.isInteger);
+    res.json(await recommendFor(req.user.id, count, nearby, exclude));
   }));
 
   return router;

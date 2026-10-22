@@ -13,7 +13,17 @@
  *           + MATCH_BONUS  ONLY if the book shares an author with the base
  *                          book AND shares a category with it.
  *         Same author alone, or same category alone, gives no bonus.
- *         final score = similarity + match_bonus
+ *           + GENRE_BONUS x (share of the base book's main genres that the
+ *                          other book has too) - 2 of 2 genres = full bonus,
+ *                          1 of 2 = half. Books without main genres (Google
+ *                          books) get 0, so nothing changes for them.
+ *         final score = similarity + match_bonus + genre_bonus
+ *
+ * GENRE_BONUS = 0.1 chosen by measurement (CBF/compare-embeddings.js --rerank,
+ * 22/10/2026, mpnet): chosen on groups A+B (100 books each), then checked on
+ * two NEW groups C+D - readers agree@10 (without the series) 30.3% -> 33.3%
+ * on C+D (+3.0, rule: +2). A genre given as separate data helps; the same
+ * genre written into the embedded text (v3) did not.
  *
  * Tune MATCH_BONUS below (or pass it in `options`) and check the effect with
  * test.js. Set it to 0 for pure embedding similarity.
@@ -31,6 +41,7 @@ const pool = new Pool({
 });
 
 const MATCH_BONUS = 0.1;
+const GENRE_BONUS = 0.1;
 
 function formatAuthors(authors) {
   return authors && authors.length ? authors.join(", ") : "Unknown author";
@@ -53,10 +64,11 @@ async function getBookById(id) {
 /**
  * @param {number|string} bookId
  * @param {number} count how many recommendations to return
- * @param {{matchBonus?: number}} [options]
+ * @param {{matchBonus?: number, genreBonus?: number}} [options]
  */
 async function getSimilarBooks(bookId, count, options = {}) {
   const matchBonus = options.matchBonus ?? MATCH_BONUS;
+  const genreBonus = options.genreBonus ?? GENRE_BONUS;
 
   // Candidate pool for re-ranking. The bonus can only lift books that are
   // already among the closest by embedding.
@@ -67,7 +79,7 @@ async function getSimilarBooks(bookId, count, options = {}) {
   // We restrict to English-language books to avoid language acting as a
   // dominant, non-semantic similarity signal.
   const result = await pool.query(
-    `SELECT c.*, c.similarity + c.match_bonus AS score
+    `SELECT c.*, c.similarity + c.match_bonus + c.genre_bonus AS score
      FROM (
        SELECT
          b.id,
@@ -80,9 +92,15 @@ async function getSimilarBooks(bookId, count, options = {}) {
            WHEN b.authors && t.authors AND b.categories && t.categories
            THEN $3::float8
            ELSE 0::float8
-         END AS match_bonus
+         END AS match_bonus,
+         CASE
+           WHEN cardinality(t.main_genres) > 0
+           THEN $5::float8 * (SELECT count(*) FROM unnest(b.main_genres) g WHERE g = ANY(t.main_genres))::float8
+                / cardinality(t.main_genres)
+           ELSE 0::float8
+         END AS genre_bonus
        FROM books b,
-            (SELECT embedding, authors, categories FROM books WHERE id = $1) AS t
+            (SELECT embedding, authors, categories, main_genres FROM books WHERE id = $1) AS t
        WHERE b.id != $1
          AND b.embedding IS NOT NULL
          AND b.language = 'en'
@@ -91,7 +109,7 @@ async function getSimilarBooks(bookId, count, options = {}) {
      ) AS c
      ORDER BY score DESC
      LIMIT $2;`,
-    [bookId, count, matchBonus, candidates]
+    [bookId, count, matchBonus, candidates, genreBonus]
   );
   return result.rows;
 }
@@ -155,6 +173,7 @@ function formatRow(row, index) {
 module.exports = {
   pool,
   MATCH_BONUS,
+  GENRE_BONUS,
   formatAuthors,
   formatCategories,
   getBookById,
