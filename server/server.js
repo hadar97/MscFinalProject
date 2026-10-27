@@ -20,6 +20,9 @@
  *   GET/POST /api/me/ratings, DELETE /api/me/ratings/:bookId, POST /api/me/events,
  *   GET /api/me/recommendations   (recommendations from the SAVED ratings and genres)
  *
+ * Reviews and discussion (signed-in): /api/social/books/:id ... - see server/social-routes.js
+ * Admin (project team, ADMIN_EMAILS in .env): /api/admin/author-requests ... - see server/admin-routes.js
+ *
  * Library availability in recommendations - ONLY if the request asks for it:
  *   POST /api/recommendations { ..., nearby: { location: {lat, lng}, radiusKm, mode } }
  *        nearby can also be { city: "Jerusalem" } or { libraryIds: [1, 2] };
@@ -49,6 +52,7 @@ const { GENRES } = require(path.join(root, "onboarding", "genres"));
 const cbf = require(path.join(root, "CBF", "Recommender"));
 const { parseNearby, getAvailability, NearbyError } = require(path.join(root, "library", "availability"));
 const { loadSeries, diversify, hasSeriesColumns } = require(path.join(root, "hybrid", "diversity"));
+const { authorAccountsOfBook } = require("./author-profiles");
 
 const db = hybrid.pool; // reuse the hybrid's connection pool for simple reads
 const PORT = Number(process.env.PORT) || 3001;
@@ -184,7 +188,12 @@ app.get("/api/books/:id", wrap(async (req, res) => {
     );
     series = s[0] || null;
   }
-  res.json({ ...rows[0], series });
+  // author accounts linked to this book (author_books): the author's name links to their page
+  const authorAccounts = await authorAccountsOfBook(db, id).catch((err) => {
+    if (err.code !== "42P01") console.warn("[authors]", err.message);
+    return [];
+  });
+  res.json({ ...rows[0], series, authorAccounts });
 }));
 
 app.get("/api/books/:id/similar", wrap(async (req, res) => {
@@ -277,6 +286,13 @@ app.use("/api/me", meRoutes({
   db, hybrid, requireUser,
   h: { BadRequest, wrap, checkGenres, checkRatings, checkId, withTexts, nearbyFromQuery, parseNearby },
 }));
+
+// ---------- reviews and discussion around a book (server/social-routes.js) ----------
+app.use("/api/social", require("./social-routes")({ db, requireUser, h: { BadRequest, wrap, checkId } }));
+
+// ---------- admin pages (project team only, ADMIN_EMAILS) - server/admin-routes.js ----------
+app.use("/api/admin", require("./admin-routes")({ db, requireUser, h: { BadRequest, wrap, checkId } }));
+app.use("/api/authors", require("./author-routes")({ db, requireUser, h: { BadRequest, wrap, checkId } }));
 
 // ---------- errors ----------
 app.use((req, res) => res.status(404).json({ error: "no such address" }));

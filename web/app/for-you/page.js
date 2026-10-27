@@ -12,7 +12,7 @@ import AppShell from "@/components/AppShell";
 import RecCard from "@/components/RecCard";
 import BookshelfLoader from "@/components/BookshelfLoader";
 import Toast, { useToast } from "@/components/Toast";
-import { scrollIntoViewSoon } from "@/lib/scroll";
+import { scrollToNewItem } from "@/lib/scroll";
 import { api } from "@/lib/api";
 
 const CITIES = ["Jerusalem", "Tel Aviv-Yafo"];
@@ -73,11 +73,13 @@ export default function ForYouPage() {
     const url = query([...seen.current]);
     if (!url) return;
     setLoadingMore(true);
-    scrollIntoViewSoon(moreRef); // show the loader, then the new books appear right there
     try {
       const r = await api(url);
       r.recommendations.forEach((b) => seen.current.add(b.id));
-      setData((d) => ({ ...d, recommendations: [...d.recommendations, ...r.recommendations] }));
+      // fresh: the new cards fade in softly (globals.css .fresh-in)
+      setData((d) => ({ ...d, recommendations: [...d.recommendations, ...r.recommendations.map((b) => ({ ...b, fresh: true }))] }));
+      // glide to the first new book once it is on the page (the loader stays where the button was)
+      if (r.recommendations[0]) scrollToNewItem(`rec-${r.recommendations[0].id}`);
       if (r.recommendations.length < PAGE) setNoMore(true);
     } catch (e) { setError(e.message); }
     finally { setLoadingMore(false); }
@@ -173,7 +175,7 @@ export default function ForYouPage() {
 
         <div className={`grid gap-x-5 gap-y-7 [grid-template-columns:repeat(auto-fill,minmax(190px,1fr))] ${loading ? "hidden" : ""}`}>
           {books.map((b) => (
-            <div key={b.id} className={b.fresh ? "fresh-in" : ""}>
+            <div key={b.id} id={`rec-${b.id}`} className={b.fresh ? "fresh-in" : ""}>
               <RecCard book={b} showAvailability={near}
                 onDismiss={(id) => replaceCard(id, "Hidden – we won't suggest it again.")}
                 onRated={(id, n) => replaceCard(id, `Rated ${n}★ – thanks!`)} />

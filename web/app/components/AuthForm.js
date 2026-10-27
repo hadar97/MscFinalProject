@@ -1,13 +1,15 @@
 "use client";
 
 // Sign-in / sign-up form, in the split "autumn library" layout
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import Leaf from "@/components/Leaf";
 import SessionEndedNotice from "./SessionEndedNotice";
+import ConsentChecks from "@/components/ConsentChecks";
+import NextField from "./NextField";
 
-export default function AuthForm({ title, subtitle, action, withName, submitLabel, altText, altHref, altLabel }) {
+export default function AuthForm({ title, subtitle, action, withName, withConsent, submitLabel, altText, altHref, altLabel }) {
   const [state, formAction, pending] = useActionState(action, null);
   return (
     <div className="flex min-h-screen flex-wrap">
@@ -27,6 +29,7 @@ export default function AuthForm({ title, subtitle, action, withName, submitLabe
             <p className="m-0 text-ink-soft">{subtitle} <Link href={altHref}>{altLabel}</Link></p>
           </div>
           <SessionEndedNotice />
+          <Suspense fallback={null}><NextField /></Suspense>
           {withName && (
             <label className="flex flex-col gap-1.5 text-sm font-medium">Name
               <input name="name" required autoComplete="name" className="field font-normal" />
@@ -38,6 +41,7 @@ export default function AuthForm({ title, subtitle, action, withName, submitLabe
           <label className="flex flex-col gap-1.5 text-sm font-medium">Password
             <input name="password" type="password" required minLength={8} autoComplete={withName ? "new-password" : "current-password"} placeholder="At least 8 characters" className="field font-normal" />
           </label>
+          {withConsent && <ConsentChecks />}
           {state?.error && <p role="alert" className="m-0 text-sm text-rust-dark">{state.error}</p>}
           <button disabled={pending} className="btn btn-primary w-full">{pending ? "Please wait…" : submitLabel}</button>
           <p className="m-0 text-center text-sm text-muted">{altText}</p>

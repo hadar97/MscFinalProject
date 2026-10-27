@@ -44,9 +44,15 @@
  *   ALS-f..a..  - matrix factorization (implicit-feedback ALS), as in the
  *                 proposal. Several settings per run: --als-factors 32,64
  *                 --als-alpha 5,20 --als-reg 0.1 --als-iters 10 --als-cg 3
+ *                 --als-min 1,3,4 (ratings below it are left out of ALS: a
+ *                 1-star rating is not a sign of liking; default 1 = all)
+ *                 --als-repeats 3 (train each setting 3 times, report the
+ *                 average: one ALS run varies by ~0.5 points with its random start)
  *                 (--no-als skips).
  *                 Re-trained here on the train ratings only.
  *   HyALS-...   - Hybrid-v3 with ALS in place of item-item CF.
+ *   HyMix-...   - (--mix) HyALS with BOTH kinds of CF: x * ALS + (1-x) * item-item CF,
+ *                 and the CF-vs-popularity weight w = n / (n + b) (--mix-beta).
  *   HyALS-...-new5 - same, but a book with fewer than 5 train ratings is "new"
  *                 (only CBF can recommend it), as in the proposal (--new-min).
  *   Hybrid-v3   - Hybrid-v2 + at most 2 books per author among the books chosen
@@ -80,12 +86,20 @@
  * Nothing in the database is changed. Results are also saved to
  * data/eval-results.csv for the report.
  *
+ * LOCAL CACHE (saves Neon's monthly network transfer): the first run saves the
+ * ratings (~26MB) and the embeddings (~35MB for mpnet) to data/cache/; later
+ * runs read them from there - no database transfer for them at all.
+ *   --refresh    read from the database again (after ratings or embeddings
+ *                change, e.g. a new embedding model or new books)
+ *   --no-cache   do not read or write the cache
+ *
  * Run:
  *   node evaluate.js
  *   node evaluate.js --users 1000 --k 10 --holdout 0.2
  *   node evaluate.js --cold 5          new users with only 5 known ratings
  *   node evaluate.js --validation      measure on the validation part (for tuning)
  *   node evaluate.js --validation --emb embedding_v2   CBF with another embedding column
+ *   node evaluate.js --validation --als-alpha 5,10,20,40 --als-reg 0.01,0.1,1   tune ALS
  */
 
 const fs = require("fs");
@@ -136,6 +150,16 @@ const ALS_REG = listArg("--als-reg", "0.1");           // regularization (lambda
 const ALS_ITERS = arg("--als-iters", 10);
 const ALS_CG = arg("--als-cg", 3);                      // conjugate-gradient steps per solve
 const NO_ALS = process.argv.includes("--no-als");
+const ALS_MIN = listArg("--als-min", "1");               // ALS uses only ratings >= this (1 = all, as before)
+// ALS starts from random numbers, so the same settings give results ~0.5 points
+// apart. --als-repeats 3 trains every setting 3 times and prints the AVERAGE.
+const ALS_REPEATS = Math.max(1, arg("--als-repeats", 1));
+// HyMix: the hybrid with BOTH kinds of CF - ALS (matrix factorization) and
+// item-item (neighbours): score = w * (x * ALS + (1 - x) * itemCF) + (1 - w) * GenrePop,
+// w = n / (n + b). --mix 0.5,0.7,1 (x values; 1 = HyALS) --mix-beta 5,10 (b values).
+// Off unless --mix is given.
+const MIX = process.argv.includes("--mix") ? listArg("--mix", "1") : [];
+const MIX_BETA = listArg("--mix-beta", String(FINAL_BETA));
 const NEW_MIN = arg("--new-min", 5);              // HyALS-...-new5: a book with fewer ratings = "new" (CBF only), as in the proposal
 const POP_PER_AUTHOR = arg("--pop-author", 2);   // Hybrid-v3: books per author among POPULARITY picks
 const MAX_PER_AUTHOR = arg("--max-author", 99);  // Hybrid-v2: books per author (99 = no limit; 2 cost 1.5 points)
@@ -149,6 +173,24 @@ const CF_MIN_SUPPORT = 2;
 const CBF_TOP_K = 50; // content neighbours per book, for CBF-kNN
 
 const PAGE = 200000;
+const CACHE_DIR = path.join(".", "data", "cache");
+const NO_CACHE = process.argv.includes("--no-cache");
+const REFRESH = process.argv.includes("--refresh");
+
+// ---------- local cache (data/cache) ----------
+function cacheRead(name) {
+  const file = path.join(CACHE_DIR, name);
+  if (NO_CACHE || REFRESH || !fs.existsSync(file)) return null;
+  const when = fs.statSync(file).mtime.toISOString().slice(0, 16).replace("T", " ");
+  console.log(`  from the local cache ${file} (saved ${when}; --refresh to read the database again)`);
+  return fs.readFileSync(file);
+}
+function cacheWrite(name, buffer) {
+  if (NO_CACHE) return;
+  fs.mkdirSync(CACHE_DIR, { recursive: true });
+  fs.writeFileSync(path.join(CACHE_DIR, name), buffer);
+  console.log(`  saved to the local cache ${path.join(CACHE_DIR, name)} (${(buffer.length / 1e6).toFixed(0)}MB)`);
+}
 const RESULTS_PATH =
   (COLD_ITEMS ? `./data/eval-results-newbooks` : COLD ? `./data/eval-results-cold${COLD}` : "./data/eval-results") +
   (VALIDATION ? "-val" : "") + (EMB_COLUMN !== "embedding" ? `-${EMB_COLUMN}` : "") + ".csv";
@@ -183,6 +225,15 @@ function shuffle(arr) {
 // ---------- data ----------
 
 async function loadRatings() {
+  // ratings.bin = Int32 triples: user_id, book_id, rating
+  const cached = cacheRead("ratings.bin");
+  if (cached) {
+    const a = new Int32Array(cached.buffer, cached.byteOffset, cached.length / 4);
+    const out = new Array(a.length / 3);
+    for (let i = 0, j = 0; i < a.length; i += 3, j++) out[j] = [a[i], a[i + 1], a[i + 2]];
+    console.log(`  ${out.length.toLocaleString()} ratings`);
+    return out;
+  }
   const rows = [];
   let lastUser = -1;
   let lastBook = -1;
@@ -199,6 +250,9 @@ async function loadRatings() {
     [lastUser, lastBook] = page[page.length - 1];
     console.log(`  read ${rows.length.toLocaleString()} ratings...`);
   }
+  const a = new Int32Array(rows.length * 3);
+  rows.forEach((r, i) => { a[i * 3] = r[0]; a[i * 3 + 1] = r[1]; a[i * 3 + 2] = r[2]; });
+  cacheWrite("ratings.bin", Buffer.from(a.buffer));
   return rows;
 }
 
@@ -225,18 +279,44 @@ async function loadBookMeta(bookIndex) {
   return { genreKeys, author };
 }
 
+// emb-<column>.bin = Int32 n, Int32 dim, n Int32 book ids, n*dim Float32 numbers
+function embToBuffer(rows, dim) {
+  const head = new Int32Array([rows.length, dim, ...rows.map((r) => r.id)]);
+  const vals = new Float32Array(rows.length * dim);
+  rows.forEach((r, i) => vals.set(r.v, i * dim));
+  return Buffer.concat([Buffer.from(head.buffer), Buffer.from(vals.buffer)]);
+}
+function embFromBuffer(buf) {
+  const copy = new Uint8Array(buf); // aligned copy
+  const head = new Int32Array(copy.buffer, 0, 2);
+  const [n, dim] = head;
+  const ids = new Int32Array(copy.buffer, 8, n);
+  const vals = new Float32Array(copy.buffer, 8 + n * 4, n * dim);
+  const rows = Array.from({ length: n }, (_, i) => ({ id: ids[i], v: vals.subarray(i * dim, (i + 1) * dim) }));
+  return { rows, dim };
+}
+
 async function loadEmbeddings(bookIndex) {
-  const { rows } = await pool.query(
-    `SELECT id, ${EMB_COLUMN}::text AS e FROM books
-     WHERE goodbooks_id IS NOT NULL AND ${EMB_COLUMN} IS NOT NULL;`
-  );
-  const dim = JSON.parse(rows[0].e).length;
+  const cacheName = `emb-${EMB_COLUMN}.bin`;
+  const cached = cacheRead(cacheName);
+  let rows, dim;
+  if (cached) {
+    ({ rows, dim } = embFromBuffer(cached));
+  } else {
+    const res = await pool.query(
+      `SELECT id, ${EMB_COLUMN}::text AS e FROM books
+       WHERE goodbooks_id IS NOT NULL AND ${EMB_COLUMN} IS NOT NULL;`
+    );
+    rows = res.rows.map((r) => ({ id: r.id, v: JSON.parse(r.e) }));
+    dim = rows[0].v.length;
+    cacheWrite(cacheName, embToBuffer(rows, dim));
+  }
   const emb = new Float32Array(bookIndex.size * dim);
   const has = new Uint8Array(bookIndex.size);
   for (const r of rows) {
     const b = bookIndex.get(r.id);
     if (b === undefined) continue;
-    const v = JSON.parse(r.e);
+    const v = r.v;
     let norm = 0;
     for (const x of v) norm += x * x;
     norm = Math.sqrt(norm) || 1;
@@ -651,13 +731,22 @@ async function main() {
 
   // ALS: one model per combination of settings (factors x alpha x reg)
   const ratingVals = Float32Array.from(train, (r) => r[2]);
+  // --als-min: ALS learns only from ratings >= min (the other models are unchanged)
+  const alsData = (min) => {
+    if (min <= 1) return [uIdx, bIdx, ratingVals];
+    const keep = [];
+    for (let k = 0; k < ratingVals.length; k++) if (ratingVals[k] >= min) keep.push(k);
+    return [Int32Array.from(keep, (k) => uIdx[k]), Int32Array.from(keep, (k) => bIdx[k]), Float32Array.from(keep, (k) => ratingVals[k])];
+  };
   const alsModels = [];
   if (!NO_ALS) {
-    for (const f of ALS_FACTORS) for (const a of ALS_ALPHA) for (const reg of ALS_REG) {
+    for (const mn of ALS_MIN) for (const f of ALS_FACTORS) for (const a of ALS_ALPHA) for (const reg of ALS_REG) for (let rep = 1; rep <= ALS_REPEATS; rep++) {
       const t1 = Date.now();
-      const tag = `f${f}a${a}` + (ALS_REG.length > 1 ? `r${reg}` : "");
+      const tag = `f${f}a${a}` + (ALS_REG.length > 1 ? `r${reg}` : "") + (ALS_MIN.length > 1 || mn > 1 ? `m${mn}` : "") +
+        (ALS_REPEATS > 1 ? `#${rep}` : "");
       console.log(`Training ALS ${tag} (${ALS_ITERS} iterations)...`);
-      const m = trainALS(uIdx, bIdx, ratingVals, nU, nB, f, a, reg, ALS_ITERS);
+      const [aU, aB, aV] = alsData(mn);
+      const m = trainALS(aU, aB, aV, nU, nB, f, a, reg, ALS_ITERS);
       alsModels.push({ ...m, name: `ALS-${tag}`, hyName: `HyALS-${tag}` });
       console.log(`    done in ${Math.round((Date.now() - t1) / 1000)}s`);
     }
@@ -680,7 +769,12 @@ async function main() {
   const popN = Float64Array.from(popularity, (p) => (maxPop ? p / maxPop : 0));
   const models = ["Random", "Popularity", "CBF-mean", "CBF-centered", "CBF-kNN", "CF",
     ...alsModels.map((m) => m.name), "Proposal-rule", ...hybridNames,
-    ...alsModels.flatMap((m) => [m.hyName, `${m.hyName}-new${NEW_MIN}`])];
+    ...alsModels.flatMap((m) => [m.hyName, `${m.hyName}-new${NEW_MIN}`]),
+    ...alsModels.flatMap((m) => mixNames(m))];
+  function mixNames(m) {
+    const tag = m.name.replace(/^ALS-/, "");
+    return MIX.flatMap((x) => MIX_BETA.map((b) => `HyMix-${tag}-x${x}-b${b}`));
+  }
   const totals = Object.fromEntries(models.map((m) => [m, { precision: 0, recall: 0, hit: 0, ndcg: 0, users: 0 }]));
   const recommended = Object.fromEntries(models.map((m) => [m, new Set()]));
 
@@ -936,6 +1030,30 @@ async function main() {
         mainN.push(b);
       }
       recs[`${m.hyName}-new${NEW_MIN}`] = [...mainN, ...newN];
+
+      // HyMix: ALS and item-item CF together, then the same rules as HyALS
+      // (new books by CBF, at most POP_PER_AUTHOR per author among popularity picks)
+      const tag = m.name.replace(/^ALS-/, "");
+      for (const x of MIX) for (const beta of MIX_BETA) {
+        const wb = mine.length / (mine.length + beta);
+        const cfMix = Float64Array.from(alsN, (a, b) => x * a + (1 - x) * cfSN[b]);
+        const ratedM = new Float64Array(nB).fill(-Infinity);
+        for (let b = 0; b < nB; b++) if (ratingCount[b] > 0) ratedM[b] = wb * cfMix[b] + (1 - wb) * popGenre(b);
+        const orderM = [];
+        for (let b = 0; b < nB; b++) if (!exclude.has(b) && ratedM[b] > -Infinity && !newV2.includes(b)) orderM.push(b);
+        orderM.sort((a, b) => ratedM[b] - ratedM[a]);
+        const authorsM = new Map();
+        const mainM = [];
+        for (const b of orderM) {
+          if (mainM.length >= K - newV2.length) break;
+          const a = authorOf[b];
+          const popDriven = (1 - wb) * popGenre(b) > wb * cfMix[b];
+          if (popDriven && a !== undefined && (authorsM.get(a) || 0) >= POP_PER_AUTHOR) continue;
+          if (a !== undefined) authorsM.set(a, (authorsM.get(a) || 0) + 1);
+          mainM.push(b);
+        }
+        recs[`HyMix-${tag}-x${x}-b${beta}`] = [...mainM, ...newV2];
+      }
     }
 
     for (const m of models) {
@@ -955,7 +1073,7 @@ async function main() {
   const pct = (x) => (x * 100).toFixed(2) + "%";
   const lines = [`model,precision@${K},recall@${K},hitrate@${K},ndcg@${K},coverage`];
   console.log(`\n================ RESULTS (K=${K}, ${testUsers.length} users) ================`);
-  console.log(`${"Model".padEnd(22)}${`Precision@${K}`.padEnd(15)}${`Recall@${K}`.padEnd(13)}${`HitRate@${K}`.padEnd(14)}${`NDCG@${K}`.padEnd(11)}Coverage`);
+  console.log(`${"Model".padEnd(28)}${`Precision@${K}`.padEnd(15)}${`Recall@${K}`.padEnd(13)}${`HitRate@${K}`.padEnd(14)}${`NDCG@${K}`.padEnd(11)}Coverage`);
   for (const m of models) {
     const t = totals[m];
     const row = {
@@ -966,11 +1084,28 @@ async function main() {
       c: recommended[m].size / nB,
     };
     console.log(
-      `${m.padEnd(22)}${pct(row.p).padEnd(15)}${pct(row.r).padEnd(13)}${pct(row.h).padEnd(14)}${pct(row.n).padEnd(11)}${pct(row.c)}`
+      `${m.padEnd(28)}${pct(row.p).padEnd(15)}${pct(row.r).padEnd(13)}${pct(row.h).padEnd(14)}${pct(row.n).padEnd(11)}${pct(row.c)}`
     );
     lines.push([m, row.p, row.r, row.h, row.n, row.c].map((x) => (typeof x === "number" ? x.toFixed(4) : x)).join(","));
   }
   console.log("=".repeat(76));
+  // --als-repeats: average of the repeats of each setting (the "#1, #2..." rows)
+  if (ALS_REPEATS > 1) {
+    const groups = new Map();
+    for (const m of models) {
+      const g = m.match(/^(.*)#\d+(.*)$/);
+      if (!g) continue;
+      const key = g[1] + g[2];
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(totals[m].precision / totals[m].users);
+    }
+    console.log(`\nAverage of ${ALS_REPEATS} ALS runs per setting (Precision@${K}, lowest - highest):`);
+    for (const [key, ps] of groups) {
+      const avg = ps.reduce((a, b) => a + b, 0) / ps.length;
+      console.log(`  ${key.padEnd(24)}${pct(avg).padEnd(10)}(${pct(Math.min(...ps))} - ${pct(Math.max(...ps))})`);
+      lines.push([`${key} (avg of ${ps.length})`, avg, "", "", "", ""].map((x) => (typeof x === "number" ? x.toFixed(4) : x)).join(","));
+    }
+  }
   fs.mkdirSync("./data", { recursive: true });
   fs.writeFileSync(RESULTS_PATH, lines.join("\n"), "utf8");
   console.log(`Saved to ${RESULTS_PATH}. Done in ${Math.round((Date.now() - t0) / 1000)}s.`);

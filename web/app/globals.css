@@ -94,3 +94,17 @@ a:hover { color: var(--color-rust-dark); }
   @keyframes toast-fade { 0%, 85% { opacity: 1; } 100% { opacity: 0; } }
   .fresh-in { animation: none; }
 }
+
+/* Terms of Use / Privacy Policy text */
+.legal h2 { font-family: var(--font-serif); font-size: 1.75rem; font-weight: 600; margin: 2.25rem 0 .5rem; }
+.legal p, .legal li { line-height: 1.7; color: #3D3029; }
+.legal ul { padding-left: 1.25rem; }
+.legal li { margin: .3rem 0; }
+.legal .note { background: var(--color-cream); border: 1px solid var(--color-line); border-radius: .75rem; padding: .9rem 1.1rem; }
+
+/* Insights charts. Two series colors, checked with the dataviz validator on
+   the cream surface (lightness, chroma, colour-blind separation, contrast):
+   finished = rust, rated = dusk blue. Single-series charts use rust. */
+:root { --chart-1: #A24B25; --chart-2: #3060A8; --chart-grid: #E6D9C6; }
+.bar-tip { pointer-events: none; opacity: 0; transition: opacity .12s; }
+.bar-hit:hover .bar-tip, .bar-hit:focus-visible .bar-tip { opacity: 1; }

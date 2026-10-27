@@ -1,6 +1,6 @@
 "use client";
 
-// My shelf: books I rated, saved and finished
+// My shelf: books I rated, my TBR ("to be read" - the books I saved) and finished
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
@@ -9,7 +9,7 @@ import Stars from "@/components/Stars";
 import { XIcon } from "@/components/Icons";
 import { api } from "@/lib/api";
 
-const TABS = [["rated", "Rated"], ["saved", "Saved"], ["finished", "Finished"]];
+const TABS = [["rated", "Rated"], ["saved", "TBR"], ["finished", "Finished"]];
 const SOURCE = { onboarding: "From the questionnaire", app: "Rated in the app", chat: "Rated in a chat" };
 
 export default function ShelfPage() {
@@ -43,7 +43,7 @@ export default function ShelfPage() {
         <div className="flex flex-wrap items-end justify-between gap-5">
           <div className="flex flex-col gap-1.5">
             <h1 className="m-0 font-serif text-5xl font-semibold">My shelf</h1>
-            <span className="text-ink-soft">{counts.rated} rated · {counts.saved} saved · {counts.finished} finished</span>
+            <span className="text-ink-soft">{counts.rated} rated · {counts.saved} on TBR · {counts.finished} finished</span>
           </div>
           <Link href="/onboarding/genres" className="text-sm">Change my genres</Link>
         </div>
@@ -69,7 +69,7 @@ export default function ShelfPage() {
                 {tab === "rated" && <><Stars value={b.rating} size={18} /><span className="text-xs text-muted">{SOURCE[b.source] || ""}</span></>}
               </div>
               {tab === "rated" && <button type="button" onClick={() => removeRating(b.id)} aria-label={`Remove rating of ${b.title}`} className="icon-btn text-ink"><XIcon /></button>}
-              {tab === "saved" && <button type="button" onClick={() => unsave(b.id)} aria-label={`Remove ${b.title} from saved`} className="icon-btn text-ink"><XIcon /></button>}
+              {tab === "saved" && <button type="button" onClick={() => unsave(b.id)} aria-label={`Remove ${b.title} from TBR`} className="icon-btn text-ink"><XIcon /></button>}
             </article>
           ))}
         </div>

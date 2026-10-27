@@ -15,7 +15,16 @@
  *   POST   /api/me/ratings               { bookId, rating } or { ratings: [{ bookId, rating }] }
  *   DELETE /api/me/ratings/:bookId
  *   POST   /api/me/events                { bookId, type }             saved | unsaved | started | finished | dismissed | clicked
+ *                                        (in the app "saved" = on the user's TBR list, "to be read")
  *   GET    /api/me/shelf                 { saved: [...], finished: [...] }  (from the events)
+ *   GET    /api/me/consents              { needed, versions, current: { terms, privacy, age_16, research } }
+ *   POST   /api/me/consents              { terms, privacy, age16, research, source } - only the keys sent are saved
+ *   GET    /api/me/author                author status: type, linked books, latest request, profile, pen name to prefill
+ *   PUT    /api/me/author/profile        { penName, bio, website } - the author's page (authors only)
+ *   GET    /api/me/author/insights       how readers respond to the author's books (server/author-insights.js)
+ *   GET    /api/me/author/insights/audience?book=<id>|all   genres of the readers who loved it, books they also loved
+ *   POST   /api/me/author-request        { penName, books, message } - "I am the author of these books"
+ *   GET    /api/me/insights              personal reading analytics (server/insights.js)
  *   GET    /api/me/recommendations       ?count=10 [&exclude=1,2,3] [&city=Jerusalem | &lat=&lng=&radiusKm=] [&mode=filter|boost]
  *                                        exclude = books already shown ("Recommend more") - 10 NEW ones
  *
@@ -23,6 +32,11 @@
  */
 
 const express = require("express");
+const { computeInsights } = require("./insights");
+const { computeAuthorInsights, computeAudience } = require("./author-insights");
+const { notifyAuthorRequest } = require("./mailer");
+const { authorPage, knownPenName, profilesTable, cleanWebsite } = require("./author-profiles");
+const { CONSENT_VERSIONS, REQUIRED, SOURCES, BODY_KEYS, currentConsents, consentNeeded } = require("./consents");
 const path = require("path");
 const { getOnboardingBooks } = require(path.join(__dirname, "..", "onboarding", "onboarding"));
 
@@ -67,8 +81,18 @@ module.exports = function meRoutes({ db, hybrid, requireUser, h }) {
     const [{ rows: ratings }, { rows: genres }, { rows: dismissed }] = await Promise.all([
       db.query(`SELECT book_id, rating FROM user_ratings WHERE user_id = $1;`, [userId]),
       db.query(`SELECT genre_key FROM user_genres WHERE user_id = $1;`, [userId]),
-      // "Not for me" (✕) - never recommended again
-      db.query(`SELECT DISTINCT book_id FROM user_events WHERE user_id = $1 AND type = 'dismissed';`, [userId]),
+      // Never recommended again: "Not for me" (✕), "I finished it", and books
+      // now on the TBR list ("to be read" = the latest saved/unsaved event is saved)
+      db.query(
+        `SELECT book_id FROM user_events WHERE user_id = $1 AND type IN ('dismissed', 'finished')
+         UNION
+         SELECT book_id FROM (
+           SELECT DISTINCT ON (book_id) book_id, type FROM user_events
+           WHERE user_id = $1 AND type IN ('saved', 'unsaved')
+           ORDER BY book_id, created_at DESC
+         ) t WHERE type = 'saved';`,
+        [userId]
+      ),
     ]);
     exclude = [...exclude, ...dismissed.map((d) => d.book_id)];
     const result = await hybrid.getHybridRecommendations(
@@ -78,6 +102,127 @@ module.exports = function meRoutes({ db, hybrid, requireUser, h }) {
     );
     return { ...result, recommendations: result.recommendations.map(withTexts) };
   }
+
+  // ---------- consents (Terms, Privacy Policy, age 16+, optional research use) ----------
+  router.get("/consents", wrap(async (req, res) => {
+    const current = await currentConsents(db, req.user.id);
+    res.json({ needed: consentNeeded(current), required: REQUIRED, versions: CONSENT_VERSIONS, current });
+  }));
+
+  // Saves one row per key sent (history is kept). Required consents cannot be
+  // declined - without them the app cannot be used (delete the account instead).
+  router.post("/consents", wrap(async (req, res) => {
+    const source = SOURCES.has(req.body.source) ? req.body.source : "consent_page";
+    const items = [];
+    for (const [key, type] of Object.entries(BODY_KEYS)) {
+      if (req.body[key] === undefined) continue;
+      if (typeof req.body[key] !== "boolean") throw new BadRequest(`${key} must be true or false`);
+      if (REQUIRED.includes(type) && req.body[key] !== true) {
+        throw new BadRequest(`${key} is required to use BookBridge`);
+      }
+      items.push({ type, granted: req.body[key] });
+    }
+    if (!items.length) throw new BadRequest("send at least one of: terms, privacy, age16, research");
+    await db.query(
+      `INSERT INTO user_consents (user_id, consent_type, version, granted, source)
+       SELECT $1, t, v, g, $5 FROM unnest($2::text[], $3::text[], $4::boolean[]) AS x(t, v, g);`,
+      [req.user.id, items.map((i) => i.type), items.map((i) => CONSENT_VERSIONS[i.type]), items.map((i) => i.granted), source]
+    );
+    const current = await currentConsents(db, req.user.id);
+    res.json({ ok: true, needed: consentNeeded(current), current });
+  }));
+
+  // ---------- authors: status and "become an author" requests ----------
+  router.get("/author", wrap(async (req, res) => {
+    const [{ rows: books }, { rows: reqs }] = await Promise.all([
+      db.query(
+        `SELECT b.id, b.title, b.thumbnail_url FROM author_books ab JOIN books b ON b.id = ab.book_id
+         WHERE ab.user_id = $1 ORDER BY b.title;`,
+        [req.user.id]
+      ),
+      db.query(
+        `SELECT id, pen_name, books, status, note, created_at, decided_at FROM author_requests
+         WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1;`,
+        [req.user.id]
+      ).catch((err) => (err.code === "42P01" ? { rows: [] } : Promise.reject(err))), // table not created yet
+    ]);
+    const r = reqs[0];
+    const page = books.length ? await authorPage(db, req.user.id).catch(() => null) : null;
+    res.json({
+      isAuthor: req.user.user_type === "author",
+      books,
+      userId: req.user.id,
+      profile: page ? { penName: page.penName, bio: page.bio, website: page.website } : null,
+      penName: page?.penName || (await knownPenName(db, req.user.id).catch(() => null)), // to prefill the next request
+      request: r ? { id: Number(r.id), penName: r.pen_name, books: r.books, status: r.status, note: r.note, createdAt: r.created_at, decidedAt: r.decided_at } : null,
+    });
+  }));
+
+  router.get("/author/insights", wrap(async (req, res) => {
+    const data = await computeAuthorInsights(db, req.user.id);
+    if (!data.books.length) return res.status(403).json({ error: "author insights are for authors linked to a book" });
+    res.json(data);
+  }));
+
+  router.get("/author/insights/audience", wrap(async (req, res) => {
+    const book = req.query.book === "all" || req.query.book === undefined ? "all" : checkId(req.query.book);
+    const data = await computeAudience(db, req.user.id, book);
+    if (!data) return res.status(404).json({ error: "not one of your books" });
+    res.json(data);
+  }));
+
+  router.put("/author/profile", wrap(async (req, res) => {
+    const { rowCount } = await db.query(`SELECT 1 FROM author_books WHERE user_id = $1 LIMIT 1;`, [req.user.id]);
+    if (!rowCount) return res.status(403).json({ error: "only authors linked to a book have an author page" });
+    if (!(await profilesTable(db))) throw new BadRequest("author pages are not set up yet (db/create-author-profiles-table.js)");
+    const penName = typeof req.body.penName === "string" ? req.body.penName.trim() : "";
+    if (!penName) throw new BadRequest("pen name is required");
+    if (penName.length > 120) throw new BadRequest("pen name: up to 120 characters");
+    const bio = typeof req.body.bio === "string" ? req.body.bio.trim() : "";
+    if (bio.length > 2000) throw new BadRequest("bio: up to 2000 characters");
+    const website = cleanWebsite(req.body.website);
+    if (website === undefined) throw new BadRequest("website: please give a full link, like https://yoursite.com");
+    await db.query(
+      `INSERT INTO author_profiles (user_id, pen_name, bio, website) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id) DO UPDATE SET pen_name = EXCLUDED.pen_name, bio = EXCLUDED.bio, website = EXCLUDED.website, updated_at = now();`,
+      [req.user.id, penName, bio || null, website]
+    );
+    res.json({ ok: true });
+  }));
+
+  router.post("/author-request", wrap(async (req, res) => {
+    const text = (v, max, name, required = true) => {
+      const t = typeof v === "string" ? v.trim() : "";
+      if (required && !t) throw new BadRequest(`${name} is required`);
+      if (t.length > max) throw new BadRequest(`${name}: up to ${max} characters`);
+      return t || null;
+    };
+    const penName = text(req.body.penName, 120, "pen name");
+    const books = text(req.body.books, 2000, "your books");
+    const message = text(req.body.message, 2000, "message", false);
+    if (req.body.confirm !== true) throw new BadRequest("please confirm that you are the author of these books");
+    if (req.user.user_type === "librarian") throw new BadRequest("library accounts cannot become authors");
+    let id;
+    try {
+      ({ rows: [{ id }] } = await db.query(
+        `INSERT INTO author_requests (user_id, pen_name, books, message) VALUES ($1, $2, $3, $4) RETURNING id;`,
+        [req.user.id, penName, books, message]
+      ));
+    } catch (err) {
+      if (err.code === "23505") throw new BadRequest("you already have a request waiting for review");
+      throw err;
+    }
+    res.status(201).json({ ok: true });
+    // an email to the project team - after answering, so it never slows or breaks the request
+    db.query(`SELECT name, email FROM neon_auth."user" WHERE id = $1;`, [req.user.authUserId])
+      .then(({ rows }) => notifyAuthorRequest({ id: Number(id), name: rows[0]?.name, email: rows[0]?.email, penName, books, message }))
+      .catch((err) => console.warn("[mail] author request email:", err.message));
+  }));
+
+  // ---------- reading analytics (the Insights page) ----------
+  router.get("/insights", wrap(async (req, res) => {
+    res.json(await computeInsights(db, req.user.id));
+  }));
 
   // ---------- profile ----------
   router.get("/", wrap(async (req, res) => {

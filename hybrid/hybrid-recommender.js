@@ -5,7 +5,8 @@
  *   regular users  - Precision@10 20.95%  (item-item CF 18.31%, previous hybrid 18.48%)
  *   new users (5)  - Precision@10  7.94%  (item-item CF 5.86%, proposal rule 3.13%)
  *
- * CF = ALS (matrix factorization, as in the proposal): the book vectors come
+ * CF = ALS + item-item together (ALS_WEIGHT, below; since 25/10/2026).
+ * ALS (matrix factorization, as in the proposal): the book vectors come
  * from CF/train-als.js (table als_item_factors); the user's vector is computed
  * here, from his ratings, with one small solve (foldInUser). If the ALS tables
  * do not exist yet, it falls back to item-item CF (item_similarity).
@@ -84,7 +85,12 @@ const OUTSIDE_GENRE = 0.01;     // tiny popularity for books outside his genres 
 const CANDIDATES = 300;         // candidates fetched from each source before mixing
 const POP_PER_AUTHOR = 2;
 const NEW_BOOK_MAX_RATINGS = 5; // a book with fewer ratings is "new": only CBF judges it (as in the proposal)
-const NEARBY_POOL = 100;        // with `nearby`: candidates ranked before filtering by library availability
+const NEARBY_POOL = 100;
+// CF = ALS_WEIGHT * ALS + (1 - ALS_WEIGHT) * item-item CF. Chosen by measurement
+// (hybrid/evaluate.js --mix, VALIDATION, 3 ALS runs each, 25/10/2026):
+//   ALS only (1.0) 20.10%  ->  0.7: 21.75%  (+1.65, ranges did not overlap)
+// Set to 1 to go back to ALS only.
+const ALS_WEIGHT = 0.7;        // with `nearby`: candidates ranked before filtering by library availability
 
 // The ALS model (settings + Y^T Y) - read once; null if CF/train-als.js was not run
 let alsPromise = null;
@@ -212,14 +218,15 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
   const globalMean = await getGlobalMean();
   const mean = (stars.reduce((a, b) => a + b, 0) + MEAN_SHRINK * globalMean) / (n + MEAN_SHRINK);
 
-  // 1a. CF candidates: ALS (score = x_u . y_i), or item-item if ALS is not trained:
-  //     score(j) = sum_i sim(i,j) * (r_i - mean)
+  // 1a. CF candidates - BOTH kinds of collaborative filtering:
+  //     ALS (matrix factorization): score = x_u . y_i
+  //     item-item (neighbours):    score(j) = sum_i sim(i,j) * (r_i - mean)
+  //     cf = ALS_WEIGHT * ALS + (1 - ALS_WEIGHT) * item-item, each scaled 0..1 first.
+  //     ALS_WEIGHT = 1 -> ALS only (the model before 25/10/2026). If ALS is not
+  //     trained, item-item alone.
   const alsModel = n ? await getAlsModel() : null;
-  const cf = !n
-    ? []
-    : alsModel
-    ? await alsCandidates(alsModel, bookIds, stars)
-    : (await pool.query(
+  const alsWeight = alsModel ? (options.alsWeight ?? ALS_WEIGHT) : 0;
+  const itemItem = async () => (await pool.query(
         `WITH mine AS (SELECT * FROM unnest($1::int[], $2::int[]) AS t(book_id, rating))
          SELECT s.neighbor_id AS id,
                 sum(s.similarity * (mine.rating - $3::float8)) AS score
@@ -231,7 +238,32 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
          ORDER BY score DESC
          LIMIT $5;`,
         [bookIds, stars, mean, CF_MIN_SUPPORT, CANDIDATES]
-      )).rows;
+      ).catch((err) => {
+        // no item_similarity table (CF/train-cf.js not run): ALS alone, never a broken page
+        if (err.code === "42P01" && alsModel) {
+          console.warn("item_similarity not found - run CF/train-cf.js. Using ALS only meanwhile.");
+          return { rows: [] };
+        }
+        throw err;
+      })).rows;
+  const [alsRows, itemRows] = !n
+    ? [[], []]
+    : await Promise.all([
+        alsWeight > 0 ? alsCandidates(alsModel, bookIds, stars) : [],
+        alsWeight < 1 ? itemItem() : [],
+      ]);
+  const scale = (rows) => {
+    const max = Math.max(0, ...rows.map((r) => Number(r.score)));
+    return new Map(rows.map((r) => [r.id, max > 0 ? Math.max(0, Number(r.score)) / max : 0]));
+  };
+  const alsS = scale(alsRows);
+  const itemS = scale(itemRows);
+  // if one kind found nothing (e.g. no item_similarity table), the other gets the full weight
+  const wA = !itemRows.length ? 1 : !alsRows.length ? 0 : alsWeight;
+  const cf = [...new Set([...alsS.keys(), ...itemS.keys()])].map((id) => ({
+    id,
+    score: wA * (alsS.get(id) || 0) + (1 - wA) * (itemS.get(id) || 0),
+  }));
 
   // 1b. Popularity inside the user's genres (+ the global most liked, as a fallback)
   const { rows: popular } = await pool.query(
@@ -261,8 +293,8 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
   const inGenre = new Set(popular.filter((r) => r.in_genre).map((r) => r.id));
 
   // Mix: w * CF(0..1) + (1 - w) * GenrePopularity(0..1)
-  const maxCf = Math.max(0, ...cf.map((r) => Number(r.score)));
-  const cfNorm = new Map(cf.map((r) => [r.id, maxCf > 0 ? Math.max(0, Number(r.score)) / maxCf : 0]));
+  // (cf is already 0..1: each kind scaled by its own maximum, then mixed - as in evaluate.js)
+  const cfNorm = new Map(cf.map((r) => [r.id, r.score]));
   const rated = [...new Set([...cfNorm.keys(), ...popNorm.keys()])]
     .map((id) => {
       const c = cfNorm.get(id) || 0;
@@ -398,7 +430,7 @@ async function getHybridRecommendations(ratings, count = 10, options = {}) {
   const byId = new Map(details.map((d) => [d.id, d]));
   return {
     cfWeight: w,
-    cfModel: !n ? "none - no ratings" : alsModel ? "ALS" : "item-item",
+    cfModel: !n ? "none - no ratings" : !alsModel ? "item-item" : alsWeight >= 1 ? "ALS" : `ALS ${alsWeight} + item-item ${+(1 - alsWeight).toFixed(2)}`,
     genres,
     ...(nearby ? { nearby } : {}),
     recommendations: final.map((p) => ({ ...byId.get(p.id), ...p })),

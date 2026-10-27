@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { authClient } from "@/lib/auth/client";
 import Logo from "@/components/Logo";
+import Header from "@/components/Header";
 import Leaf from "@/components/Leaf";
 
 const COVERS = [
@@ -22,19 +23,16 @@ export default function Home() {
   const signedIn = Boolean(session?.user);
   return (
     <div className="min-h-full">
-      <header className="flex flex-wrap items-center justify-between gap-6 border-b border-line px-6 py-5 md:px-12">
-        <Logo />
-        <nav aria-label="Main" className="flex flex-wrap items-center gap-3">
-          {signedIn ? (
-            <Link href="/for-you" className="btn btn-dark">Go to your picks</Link>
-          ) : (
-            <>
-              <Link href="/auth/sign-in" className="px-4 py-2.5 font-medium text-ink no-underline">Sign in</Link>
-              <Link href="/auth/sign-up" className="btn btn-dark">Create account</Link>
-            </>
-          )}
-        </nav>
-      </header>
+      {/* signed in: the same menu as everywhere in the app; guests: sign in / create account */}
+      {signedIn ? <Header /> : (
+        <header className="flex flex-wrap items-center justify-between gap-6 border-b border-line px-6 py-5 md:px-12">
+          <Logo />
+          <nav aria-label="Account" className="flex flex-wrap items-center gap-3">
+            <Link href="/auth/sign-in" className="px-4 py-2.5 font-medium text-ink no-underline">Sign in</Link>
+            <Link href="/auth/sign-up" className="btn btn-dark">Create account</Link>
+          </nav>
+        </header>
+      )}
 
       <section className="relative mx-auto flex max-w-[1280px] flex-wrap items-center gap-14 overflow-hidden px-6 py-20 md:px-12">
         <Leaf size={120} color="#B8893B" vein={null} className="absolute right-[44%] top-9 rotate-[-28deg] opacity-20" />
@@ -48,7 +46,9 @@ export default function Home() {
             Tell us what you love. BookBridge learns your taste from readers like you, shows why each book was picked, and where you can borrow it nearby.
           </p>
           <div className="flex flex-wrap gap-3.5">
-            <Link href={signedIn ? "/onboarding/genres" : "/auth/sign-up"} className="btn btn-primary">Start the 2-minute quiz</Link>
+            {signedIn
+              ? <Link href="/for-you" className="btn btn-primary">Go to your picks</Link>
+              : <Link href="/auth/sign-up" className="btn btn-primary">Start the 2-minute quiz</Link>}
             {!signedIn && <Link href="/auth/sign-in" className="btn btn-outline">I have an account</Link>}
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function Home() {
 
       <footer className="mx-auto flex max-w-[1280px] flex-wrap justify-between gap-4 px-6 py-8 text-sm text-muted md:px-12">
         <span>BookBridge · MSc graduation project</span>
-        <span>Library availability is simulated for the demo</span>
+        <span>Library availability is simulated for the demo · <Link href="/terms">Terms of Use</Link> · <Link href="/privacy">Privacy Policy</Link></span>
       </footer>
     </div>
   );

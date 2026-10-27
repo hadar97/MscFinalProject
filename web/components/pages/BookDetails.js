@@ -7,12 +7,34 @@ import AppShell from "@/components/AppShell";
 import Cover from "@/components/Cover";
 import Stars from "@/components/Stars";
 import BookshelfLoader from "@/components/BookshelfLoader";
-import { scrollIntoViewSoon } from "@/lib/scroll";
+import BookSocial from "@/components/pages/BookSocial";
+import { scrollToNewItem } from "@/lib/scroll";
 import { api } from "@/lib/api";
 
 const CITIES = ["Jerusalem", "Tel Aviv-Yafo"];
 const SIMILAR_PAGE = 6; // "Show more" adds 6, the server stops at 30
 const year = (d) => (d ? String(d).slice(0, 4) : null);
+
+// The book's authors; a name that belongs to an author account on BookBridge links to their page.
+// Matched by name (pen name = author name); if no name matches, the first author links to the first account.
+function AuthorNames({ names, accounts }) {
+  const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const used = new Set();
+  const linkOf = names.map((n) => {
+    const a = accounts.find((x) => !used.has(x.userId) && norm(x.penName) === norm(n));
+    if (a) used.add(a.userId);
+    return a || null;
+  });
+  if (accounts.length && !used.size && names.length) linkOf[0] = accounts[0];
+  return names.map((n, i) => (
+    <span key={n + i}>
+      {i > 0 && ", "}
+      {linkOf[i]
+        ? <Link href={`/authors/${linkOf[i].userId}`} title="Author page on BookBridge" className="text-rust">{n}</Link>
+        : n}
+    </span>
+  ));
+}
 
 export default function BookDetails({ id }) {
   const [book, setBook] = useState(null);
@@ -44,10 +66,10 @@ export default function BookDetails({ id }) {
 
   async function moreSimilar() {
     setLoadingSimilar(true);
-    scrollIntoViewSoon(moreRef); // show the loader; the new books appear right there
     try {
       const r = await api(`/api/books/${id}/similar?count=${SIMILAR_PAGE}&offset=${similar.length}`, { auth: false });
-      setSimilar((s) => [...s, ...r.books]);
+      setSimilar((s) => [...s, ...r.books.map((b) => ({ ...b, fresh: true }))]); // fresh: fade in softly
+      if (r.books[0]) scrollToNewItem(`sim-${r.books[0].id}`); // glide to the first new book once it is shown
       setSimilarMore(r.hasMore);
     } catch { setSimilarMore(false); }
     finally { setLoadingSimilar(false); }
@@ -66,11 +88,10 @@ export default function BookDetails({ id }) {
   if (error) return <AppShell><p role="alert" className="text-rust-dark">Could not load this book: {error}</p></AppShell>;
   if (!book) return <AppShell><BookshelfLoader label="Taking the book off the shelf…" /></AppShell>;
 
-  const authors = (book.authors || []).join(", ");
   const genres = book.main_genres?.length ? book.main_genres : book.categories || [];
   const desc = book.description || "";
   const short = desc.length > 520 && !showAll ? desc.slice(0, 520).replace(/\s+\S*$/, "") + "…" : desc;
-  const meta = [authors, year(book.published_date), book.page_count ? `${book.page_count} pages` : null].filter(Boolean).join(" · ");
+  const meta = [year(book.published_date), book.page_count ? `${book.page_count} pages` : null].filter(Boolean).join(" · ");
   const branches = avail?.availability?.branches || [];
 
   return (
@@ -83,7 +104,10 @@ export default function BookDetails({ id }) {
           <div className="flex flex-[1_1_520px] flex-col gap-5">
             <div className="flex flex-col gap-2">
               <h1 className="m-0 font-serif text-5xl font-semibold leading-none md:text-[58px]">{book.title}</h1>
-              <span className="text-lg text-ink-soft">{meta}</span>
+              <span className="text-lg text-ink-soft">
+                <AuthorNames names={book.authors || []} accounts={book.authorAccounts || []} />
+                {meta && (book.authors?.length ? " · " : "") + meta}
+              </span>
               {book.series && (
                 <Link href={`/series/${encodeURIComponent(book.series.name)}`} className="self-start text-base italic text-rust">
                   {book.series.number !== null ? `Book ${book.series.number} of ${book.series.total} in ${book.series.name}` : `Part of ${book.series.name}`} →
@@ -105,7 +129,7 @@ export default function BookDetails({ id }) {
               <Stars value={myRating} onChange={rate} size={28} label="Your rating" />
             </div>
             <div className="flex flex-wrap gap-3">
-              <button type="button" onClick={() => event("saved", "Saved to your shelf.")} className="btn btn-primary">Save for later</button>
+              <button type="button" onClick={() => event("saved", "Added to your TBR – find it on My shelf.")} className="btn btn-primary">Add to TBR</button>
               <button type="button" onClick={() => event("finished", "Marked as finished – rate it to improve your picks.")} className="btn btn-outline">I finished it</button>
               <Link href="/chat" className="btn border border-line-strong font-medium text-ink">Ask about this book</Link>
             </div>
@@ -137,13 +161,15 @@ export default function BookDetails({ id }) {
           <span className="text-xs text-muted">Demo inventory – not real-time library data.</span>
         </section>
 
+        <BookSocial bookId={id} myRating={myRating} />
+
         {similar === null && <BookshelfLoader label="Finding similar books…" />}
         {similar?.length > 0 && (
           <section aria-labelledby="similar" className="flex flex-col gap-4">
             <h2 id="similar" className="m-0 font-serif text-[34px] font-semibold">Similar in spirit</h2>
             <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(150px,1fr))]">
               {similar.map((s) => (
-                <Link key={s.id} href={`/books/${s.id}`} className="flex flex-col gap-2 text-ink no-underline hover:text-rust">
+                <Link key={s.id} id={`sim-${s.id}`} href={`/books/${s.id}`} className={`${s.fresh ? "fresh-in " : ""}flex flex-col gap-2 text-ink no-underline hover:text-rust`}>
                   <Cover book={s} />
                   <span className="text-sm font-bold leading-snug">{s.title}</span>
                   <span className="text-[13px] text-muted">{s.authors?.[0]}</span>

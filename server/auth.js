@@ -42,8 +42,11 @@ function requireUser(db) {
       let payload;
       try {
         ({ payload } = await jose.jwtVerify(m[1], jwks, { issuer }));
-      } catch {
-        return res.status(401).json({ error: "invalid or expired token - sign in again" });
+      } catch (err) {
+        // why the token was refused - shown in the server window (expired? wrong issuer? keys not reachable?)
+        console.warn(`[auth] token refused: ${err.code || err.name}: ${err.message}`);
+        const reason = err.code === "ERR_JWT_EXPIRED" ? "expired" : err.code === "ERR_JWKS_TIMEOUT" || /fetch|network|ENOTFOUND|ECONN/i.test(err.message) ? "keys-unreachable" : "invalid";
+        return res.status(401).json({ error: "invalid or expired token - sign in again", reason });
       }
       if (!payload.sub) return res.status(401).json({ error: "token has no user" });
 

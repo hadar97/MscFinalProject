@@ -63,7 +63,7 @@ export default function RecCard({ book, showAvailability, onDismiss, onRated }) 
         <Stars value={0} onChange={rate} size={20} label={`Rate ${book.title}`} />
       ) : (
         <div className="flex gap-2">
-          <button type="button" disabled={busy} onClick={save} aria-pressed={saved} aria-label={saved ? "Remove from saved" : "Save for later"} data-tip={saved ? "Remove from saved" : "Save for later"} className={`icon-btn ${saved ? "text-rust" : "text-ink"}`}><BookmarkIcon filled={saved} /></button>
+          <button type="button" disabled={busy} onClick={save} aria-pressed={saved} aria-label={saved ? "Remove from my TBR" : "Add to my TBR (to be read)"} data-tip={saved ? "Remove from my TBR" : "Add to my TBR"} className={`icon-btn ${saved ? "text-rust" : "text-ink"}`}><BookmarkIcon filled={saved} /></button>
           <button type="button" disabled={busy} onClick={() => setRating(true)} aria-label="Rate this book" data-tip="I read it – rate it" className="icon-btn text-ink"><StarIcon /></button>
           <button type="button" onClick={dismiss} aria-label="Not for me" data-tip="Not for me – hide it" className="icon-btn text-ink"><XIcon /></button>
         </div>
